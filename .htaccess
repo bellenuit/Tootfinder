@@ -1,0 +1,35 @@
+DirectoryIndex index.php
+
+ExpiresActive On
+ExpiresDefault "access plus 1 seconds"
+ExpiresByType image/gif "access plus 700000 seconds"
+ExpiresByType image/jpeg "access plus 700000 seconds"
+ExpiresByType image/png "access plus 700000 seconds"
+ExpiresByType audio/mp3 "access plus 700000 seconds"
+ExpiresByType text/css "access plus 700000 seconds"
+ExpiresByType text/javascript "access plus 700000 seconds"
+ExpiresByType application/javascript "access plus 700000 seconds"
+
+<FilesMatch "\.(ico|pdf|flv|jpg|jpeg|png|gif|js|css|swf)$">
+Header set Cache-Control "max-age=2903040, public"
+</FilesMatch>
+
+<Files ~ ".txt$">
+Order allow,deny
+Deny from all
+</Files>
+<Files .htaccess>
+order allow,deny
+deny from all
+</Files>
+
+<Files .db>
+order allow,deny
+deny from all
+</Files>
+
+<Files cron.php>
+order allow,deny
+deny from all
+</Files>
+

@@ -1,0 +1,19 @@
+<Files ~ ".txt$">
+Order allow,deny
+Deny from all
+</Files>
+<Files .htaccess>
+order allow,deny
+deny from all
+</Files>
+
+<Files ~ ".db$">
+order allow,deny
+deny from all
+</Files>
+
+<Files ~ ".php$">
+order allow,deny
+deny from all
+</Files>
+
