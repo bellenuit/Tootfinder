@@ -29,6 +29,18 @@ function getinfo()
 	
 }
 
+function indexStatus()
+{
+	$db = init(true);
+	$sql = 'SELECT min(priority) FROM users WHERE priority > 0';
+	$minpriority = $db->querySingle($sql);
+	$delay = round(($minpriority-time())/60);
+	if (!$delay) return 'in time';
+	elseif ($delay == 1) return '1 minute ahead';
+	elseif ($delay == -1) return '1 minute behind';
+	elseif ($delay > 0) return $delay.' minutes ahead';
+	elseif ($delay < 0) return -$delay.' minutes behind';
+}
 
 
 function popularQueries()

@@ -38,6 +38,9 @@ function init($readonly = false)
 	}
 	
 	$db->createFunction('score', 'score'); // must be also for readonly!
+	$db->createFunction('time2date', 'time2date'); // must be also for readonly!
+	
+	
 	
 	if ($readonly) return $db;
 	
@@ -46,17 +49,25 @@ function init($readonly = false)
 		echo '<p>create table posts error '.$db->lastErrorMsg();
 	}
 	
-
-	if (!$db->exec('CREATE TABLE IF NOT EXISTS users (user, host, label, priority)'))
+	
+	
+	if (!$db->exec('CREATE TABLE IF NOT EXISTS users (user, host, label, id, priority)'))
 	{
 		echo '<p>create table users error '.$db->lastErrorMsg();
 	}
+	
+	
+	
 
-	if (!$db->exec('CREATE TABLE IF NOT EXISTS queries (query, date, results)'))
+	if (!$db->exec('CREATE INDEX IF NOT EXISTS users_label ON users (label)'))
 	{
 		echo '<p>create table queries error '.$db->lastErrorMsg();
 	}
-	
+	if (!$db->exec('CREATE INDEX IF NOT EXISTS users_priority ON users (priority)'))
+	{
+		echo '<p>create table queries error '.$db->lastErrorMsg();
+	}
+
 	
 	
 	return $db;	
@@ -93,6 +104,12 @@ function initQueries($readonly = false)
 	{
 		echo '<p>create table queries error '.$db->lastErrorMsg();
 	}
+	
+	if (!$db->exec('CREATE INDEX IF NOT EXISTS queries_query ON queries (query)'))
+	{
+		echo '<p>create table queries error '.$db->lastErrorMsg();
+	}
+
 	
 	return $db;	
 	

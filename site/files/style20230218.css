@@ -1,0 +1,58 @@
+/* global */
+a { color: #8c8dff }
+body { font-family: sans-serif; background-color: #191b22; color: #fff; }
+h1, h4 { padding: 4px; margin: 0px; }
+p { padding: 4px; margin: 0px; }
+
+/* classes */
+a.link { text-decoration: none; color: white; }
+a:visited { color: #8c8dff }
+
+div.container {  display: grid; grid-gap: 8px; grid-template-columns: repeat(auto-fill, minmax(320px,1fr)); margin-left: 8px; }
+
+div.contentwarning { visibility:hidden}
+div.contentwarninglabel { visibility:visible; background-color: orange; color: black; width: 100%; } 
+div.header { margin-left: 8px; }
+div.media { width:100%; margin-top: 8px; }
+div.card { width:100%; margin-top: 8px; background-color: black; }
+div.card a { text-decoration: none; color: white; }
+
+
+div.post { min-height: 200px; float: left; padding: 8px; overflow:hidden; z-index: 0; background-color: #282c37; color: white; margin:4px;  height: auto;}
+div.postwarning { background-color: #d80;  }
+div.postwarning:hover { background-color: #d80; }
+div.post p { margin-top: 8px; line-height: 24px; margin-bottom: 8px;  }
+div.postbody { margin-top:8px };
+div.postimage { min-height: 200px; float: left;  overflow:hidden; z-index: 0; background-color: #282c37; color: white; }
+div.status p { margin-left: 8px; line-height: 24px; }
+
+form { padding: 4px; border: 4px; line-height: 44px; }
+
+img.avatar { width: 30px; height: 30px; float: left; padding-right: 4px; padding-left: 4px }
+img.media { width: 100%}
+img.card { width: 100%; }
+
+
+input[type=text] { width: 230px; height: 30px; margin-right: 8px; color: white; background-color: #585c67; font-weight:bold; font-size: 16px;  padding: 4px; border:3px; margin-top: 0px; border-radius: 0; -webkit-appearance: none;}
+input[type=text]::placeholder { color: #ddf; opacity: 1;}
+input[type=text]::-ms-input-placeholder  { color: #ddf; opacity: 1;}
+input[type=search] { width: 230px; height: 30px; margin-left: 0px; margin-right: 4px; color: white; background-color: #585c67; font-weight:bold; font-size: 16px;  padding: 4px; border:3px; margin-top: 0px; border-radius: 0; -webkit-appearance: none; }
+input[type=submit] { min-width: 76px; height: 30px; padding-left: 8px; padding-right: 8px; margin-right: 8px; background-color: #6364ff; border: none; color: white; text-decoration: none;
+cursor: pointer;margin-right: 0px; border:0px; margin-top: 0px; font-size: 16px; border-radius: 0;-webkit-appearance: none;
+  }
+
+p.card { padding: 8px; margin: 0px !important;  }
+
+span.ellipsis::after { content: "…"; }
+span.error { color: orange; }
+span.invisible { display: none; }
+span.ok { color: green; }
+span.signature { font-size: 80%;  }
+
+/* id */
+
+
+
+
+
+

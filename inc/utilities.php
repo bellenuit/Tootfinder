@@ -4,45 +4,56 @@
 /**
  *	general purpose functions
  * 
- *  @version 1.2 2023-02-12
+ *  @version 1.3 2023-02-18
  */
 	
 if (!defined('CRAWLER')) die('invalid acces');
 
 
+function getRemoteFiles($jobs)
+{
+	$mh = curl_multi_init();
+	foreach($jobs as $k => $v)
+	{
+		$f = fopen($v,"wb");
+		$c = curl_init();
+		
+		curl_setopt($c, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($c, CURLOPT_SSL_VERIFYPEER, 0);
+		curl_setopt($c, CURLOPT_URL, $k);
+		curl_setopt($c, CURLOPT_TIMEOUT,5);
+		curl_setopt($c, CURLOPT_USERAGENT, 'Tootfinder/1.1 (+https://www.tootfinder.ch/index.php)');
+		if ($fv = @filemtime($v)) 
+		{
+			curl_setopt($c, CURLOPT_TIMEVALUE, $fv);
+			curl_setopt($c, CURLOPT_TIMECONDITION, CURL_TIMECOND_IFMODSINCE);
+		}
+		curl_setopt($c, CURLOPT_FOLLOWLOCATION, true);
+		curl_setopt($c, CURLOPT_FILE, $f); 
+		
+	    if (substr($v,-5)=='.json') curl_setopt($c, CURLOPT_HTTPHEADER, array('Accept: application/activity+json'));
 
-function getRemoteFile($url, $getheaders = false)
+		curl_multi_add_handle($mh,$c);
+	}
+	do {
+    curl_multi_exec($mh, $running);
+    curl_multi_select($mh);
+	} while ($running > 0);
+
+}
+
+
+function getRemoteString($url)
 {
        	$c = curl_init();
         curl_setopt($c, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($c, CURLOPT_SSL_VERIFYPEER, 0);
-        if ($getheaders)
-        {
-	        curl_setopt($c, CURLOPT_HEADER, 1);
-			curl_setopt($c, CURLOPT_NOBODY, 1);
-		}
+        curl_setopt($c, CURLOPT_TIMEOUT,5);
         curl_setopt($c, CURLOPT_URL, $url);
-        curl_setopt($c,CURLOPT_TIMEOUT,5); // seconds
-        curl_setopt($c, CURLOPT_USERAGENT, 'Tootfinder/1.1 (+https://www.tootfinder.ch/index.php)');
         $contents = curl_exec($c);
-                
-        $result = $contents;  
-        
-        // print_r($c);    
-
-        if ($result)
-        {
-        	curl_close($c);
-        	return $result;
-        }
-        else 
-        {
-            // echo curl_error($c);
-            curl_close($c);
-            return false;
-         }
-}
-
+        curl_close($c);
+		return $contents;
+ }
 
 function header2dict($s)
 {
@@ -61,18 +72,14 @@ function header2dict($s)
 
 function soundexLong($a)
 {
-	//echo "<p>$a</p>";
 	$a = preg_replace('/[^a-zA-Z&0-9 ]/',' ',$a);
 	$list = array();
 	foreach(explode(' ',$a) as $w)
 	{
-		//echo $w.' ';
 		$list[] = soundex($w);
 	}
 	return join(' ',$list);	
 }
-
-
 
 
 function xml2array( $xmlObject, $out = array () )

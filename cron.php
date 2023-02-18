@@ -14,40 +14,44 @@
 <body>
 	<h1>Tootfinder crawler</h1>
 	<?php
-	ini_set('max_execution_time', '300'); //300 seconds = 5 minutes
-	$start = time();
-	define('CRAWLER',true);
-    include 'api.php';
-    
-	echo '<h4>Crawl</h4>';
-    echo crawl();
-    $ende = time();
-    echo '<p>'.sprintf('%0d',$ende - $start).' seconds';
 
-	$start = time();
-	echo '<h4>Indexed</h4>';
+	ini_set('max_execution_time', '300');
+	define('CRAWLER',true);
+	include 'api.php';
 	
-	echo index();
+	
+	$echo = '';
+	
+	
+	$ende = $start = time();
+	
+	$echo .= crawl();
+	$echo .= index();
+	$ende = time();
+	
+	$ende = time();
+	$echo .= '<p>'.sprintf('%0d',$ende - $start).' seconds';
+	
+	$db = init();
+	//$db->exec('DELETE FROM posts');
+	
+	$echo .= '<h4>Newest post</h4>';
+		$echo .= sqlTable($db,"SELECT user, pubdate, indexdate, followers FROM posts WHERE indexdate <> '' ORDER BY indexdate DESC LIMIT 10");
+	
+		
+	$echo .= '<h4>Priority</h4>';
+	$echo .= sqlTable($db,'SELECT label, time2date(priority) as priority FROM users WHERE priority > 0 ORDER BY priority LIMIT 10;');
 	
 	$ende = time();
 	
-	echo '<p>'.sprintf('%0d',$ende - $start).' seconds';
+	$echo .= '<p>'.sprintf('%0d',$ende - $start).' seconds';
 	
-	$start = time();
+	file_put_contents('site/job.txt',$echo);
 	
-	$db = init();
-	
-	echo '<h4>Newest post</h4>';
-	echo sqlTable($db,"SELECT user, pubdate, indexdate, followers FROM posts WHERE indexdate <> '' ORDER BY indexdate DESC LIMIT 10");
+	echo $echo;
 
-	
-	echo '<h4>Priority</h4>';
-	echo sqlTable($db,'SELECT priority, count(user) as c FROM users GROUP BY priority ORDER BY priority DESC LIMIT 10');
-	
-	echo '<h4>Followers</h4>';
-	echo sqlTable($db,'SELECT followers, count(link) as c FROM posts GROUP BY followers ORDER BY followers DESC');
-	
-	echo '<p>'.sprintf('%0d',$ende - $start).' seconds';
+
+
 	?>	 
 </body>
 </html>

@@ -4,7 +4,7 @@
 /**
  *	query functions
  * 
- *  @version 1.2 2023-02-12
+ *  @version 1.3 2023-02-18
  */	
 	
 if (!defined('CRAWLER')) die('invalid acces');
@@ -12,17 +12,21 @@ if (!defined('CRAWLER')) die('invalid acces');
 
 
 
-function query($q, $doindex = true)
+function query($q, $doindex = true, $newposts = false, $allposts = false)
 {
 	$db = init(true);
 	$query0 = $q;
 	$q = SQLite3::escapeString($q);
 	$planb = false;
+	$order = ' ORDER BY score DESC '; if ($newposts) $order = ' ORDER BY pubdate DESC ';
+	$limit = ' LIMIT 100 '; if ($allposts) $limit = '  ';
+ 
 	
 	$sql = "SELECT '2' as found, score(offsets(posts), description, followers, pubdate, indexdate) as score, link, user, description, pubdate, image, media, followers, indexdate FROM posts 
   WHERE posts MATCH '$q'
-  ORDER BY score DESC
-  LIMIT 100";
+  $order
+  $limit ";
+  
 	
 	$list = $db->query($sql);
 	
@@ -35,8 +39,9 @@ function query($q, $doindex = true)
 		
 		$sql = "SELECT '1' as found, score(offsets(posts), description, followers, pubdate, indexdate) as score, link, user, description, pubdate, image, media, followers, indexdate FROM posts 
   WHERE posts MATCH '$q'
-  ORDER BY score DESC
-  LIMIT 100";
+  $order
+  $limit ";
+
 		
 		$list = $db->query($sql);
 		
@@ -47,8 +52,9 @@ function query($q, $doindex = true)
 			
 			$sql = "SELECT '0' as found, score(offsets(posts), description, followers, pubdate, indexdate) as score, link, user, description, pubdate, image, media, followers, indexdate FROM posts 
 			  WHERE soundex MATCH '$q'
-	  ORDER BY score DESC
-	  LIMIT 10";
+	  $order
+	  $limit ";
+
 	  
 	  		$list = $db->query($sql); 
   		
@@ -80,6 +86,14 @@ function query($q, $doindex = true)
 		$q = SQLite3::escapeString($query0);
 		$sql2 = "INSERT INTO queries (query, date, results) VALUES ('".$q."','".$date."',".$rc.");"; 
 		if (!$db->exec($sql2)) echo '<p>index error '.$db->lastErrorMsg(); 
+			// clean old posts
+		$limit = date('Y-m-d',strtotime('-14 day', time()));
+
+		if (rand(0,100)>98) $journal []= "DELETE FROM posts WHERE pubdate < '".$limit."'; VACUUM ; "; 
+		
+		$sql2 = "DELETE FROM queries WHERE date < '".$limit."'; VACUUM ;"; 
+		if (rand(0,1000)>998) $db->exec($sql2); 
+
 		$db->close();
 	}
 	
@@ -123,7 +137,10 @@ function score($s, $description, $followers, $pubdate, $indexdate)
    return $r;
 }
 
-
+function time2date($t)
+{
+	return date("Y-m-d H:i:s",$t);
+}
 
 	
 function queryStar($q)
