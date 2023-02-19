@@ -11,7 +11,7 @@ a:visited { color: #8c8dff }
 div.container {  display: grid; grid-gap: 8px; grid-template-columns: repeat(auto-fill, minmax(320px,1fr)); margin-left: 8px; }
 
 div.contentwarning { visibility:hidden}
-div.contentwarninglabel { visibility:visible; background-color: orange; color: black; width: 100%; } 
+div.contentwarninglabel { visibility:visible; background-color: orange; color: black; width: calc(100%-4px);  padding: 8px; margin:4px; } 
 div.header { margin-left: 8px; }
 div.media { width:100%; margin-top: 8px; }
 div.card { width:100%; margin-top: 8px; background-color: black; }

@@ -4,7 +4,7 @@
  *	functions related to users
  * 
  * 
- *  @version 1.3 2023-02-18
+ *  @version 1.4 2023-02-20
  */
 	
 function addUser($label)
@@ -117,6 +117,8 @@ function validUser($label)
 				case 'Unauthorized: token not supplied': 
 				case 'This method requires an authenticated user': 
 				
+				// @rename($localpath,$tfRoot.'/site/rejected/profile-'.$label.'.json');
+				
 				// fallback to html
 				
 				$localpath = $tfRoot.'/site/profiles/'.$label.'.html';
@@ -145,7 +147,6 @@ function validUser($label)
 				if (count($matches)) $followers = $matches[1];
 				if (stristr($followers,'K')) $followers = 1000 * str_replace('K','',$followers);
 				if (stristr($followers,'M')) $followers = 1000000 * str_replace('M','',$followers);
-
 			}
 		}
 		else
@@ -162,14 +163,7 @@ function validUser($label)
 		if (stristr($head,'tfr')) return 'tfr::'.$followers;
 		if (stristr($head,'searchable')) return 'searchable::'.$followers;
 	}
-	else
-	{
-		// echo "no file";
-	}
 	
-	// valid until february 19th
-	global $oldusers;	
-	if (stristr($oldusers,$label)) { return '::25';}
 		
 	return false;	
 }

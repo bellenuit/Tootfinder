@@ -9,7 +9,7 @@ if (!defined('CRAWLER')) die('invalid acces');
  *  There are two separate databases for the indexed and the queries.
  *  Whenever possible ask only for read access. Reading is concurrent, writing not.
  * 
- *  @version 1.2 2023-02-12
+ *  @version 1.4 2023-02-20
  */
 
 
@@ -55,7 +55,6 @@ function init($readonly = false)
 	{
 		echo '<p>create table users error '.$db->lastErrorMsg();
 	}
-	
 	
 	
 

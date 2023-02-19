@@ -33,3 +33,8 @@ order allow,deny
 deny from all
 </Files>
 
+RewriteEngine on
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php?name=$1 [L,QSA]
+

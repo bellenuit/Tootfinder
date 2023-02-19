@@ -10,9 +10,25 @@
  *  matti@belle-nuit.com
  *  @buercher@tooting.ch
  * 
- *  @version 1.3 2023-02-18
+ *  @version 1.4 2023-02-20
  */
-	
+ 
+@define('CRAWLER',true);
+include_once 'api.php';
+
+$userlabel = '';
+
+$msg = filter_input(INPUT_GET, 'msg', FILTER_SANITIZE_STRING);
+$join = filter_input(INPUT_GET, 'join', FILTER_SANITIZE_STRING);
+$submitjoin = filter_input(INPUT_GET, 'submitjoin', FILTER_SANITIZE_STRING);
+$userlabel = trim(preg_replace('/\t+/', '',filter_input(INPUT_GET, 'userlabel', FILTER_SANITIZE_STRING)));
+$query = trim(preg_replace('/\t+/', '',filter_input(INPUT_GET, 'query', FILTER_SANITIZE_SPECIAL_CHARS))); 
+$noindex = filter_input(INPUT_GET, 'noindex', FILTER_SANITIZE_STRING);
+$name = filter_input(INPUT_GET, 'name', FILTER_SANITIZE_STRING);
+$doindex = 1 - $noindex;
+
+if ($name && substr($name,0,9)=='rest/api/') { include 'inc/rest.php'; exit; }
+
 ?>
 
 <html>
@@ -28,18 +44,8 @@
 	
 	<?php 
 		
-	@define('CRAWLER',true);
-    include_once 'api.php';
-    $userlabel = '';
-
-	$msg = filter_input(INPUT_GET, 'msg', FILTER_SANITIZE_STRING);
-	$join = filter_input(INPUT_GET, 'join', FILTER_SANITIZE_STRING);
-	$submitjoin = filter_input(INPUT_GET, 'submitjoin', FILTER_SANITIZE_STRING);
-	$userlabel = filter_input(INPUT_GET, 'userlabel', FILTER_SANITIZE_STRING);
-	$query = filter_input(INPUT_GET, 'query', FILTER_SANITIZE_SPECIAL_CHARS); 
-	$noindex = filter_input(INPUT_GET, 'noindex', FILTER_SANITIZE_STRING);
-	$doindex = 1 - $noindex;
-
+	
+    
 	
 	if ($submitjoin)
 	{
@@ -83,8 +89,8 @@
 	        $host = @$matches[2];
 	        $signature = '<span class="signature">'.$row['user'].'<br><a href="'.$row['link'].'" target="_blank">'.$row['pubdate'].'</a></span>';
 	        $line = $row['description'];
-	        $line = handleContentWarning($line);
-	        $cw = false; if (stristr($line,'class="contentwarninglabel"')) $cw = true; 
+	        
+	        $line = handleHTMLHeader($line);
 	        $line = handleMentions($line);
 	        $line = handleHashtags($line);
 	        // touch devices hack
@@ -94,11 +100,10 @@
 	        
 	        
 	        $line .= handleMedia(@$row['media']);
+	        
+	        $line = handleContentWarning($line);
 
-	        if ($cw)
-				$line = '<div class="contentwarning" onclick="this.style.visibility=\'visible\'">'.$line.'</div>';
-
-				$line = '<div class="post"><div class="postheader"><a href="https://'.$host.'/users/'.$username.'" target="_blank"><img src="'.$row['image'].'" class="avatar"> </a>'. $signature.'</div><div class="postbody">'.$line.'</div></div>';
+			$line = '<div class="post"><div class="postheader"><a href="https://'.$host.'/users/'.$username.'" target="_blank"><img src="'.$row['image'].'" class="avatar"> </a>'. $signature.'</div><div class="postbody">'.$line.'</div></div>';
 				
 	       
 	        //print_r($row);
@@ -136,26 +141,32 @@
 		
 		if ($join) echo $jointheinxex;
 		
+		echo '<div class="post"><p><b>Full text search on Mastodon</b>
+	<p>Imagine searching any post on Mastodon. This is now possible - at least for post of users that opt in.
+	<p>Tootfinder indexes all public posts of consenting users and makes them searchable for 14 days. If you want to be part of it, <a href="index.php?join=1">join the index</a>.
+	</div>';
+
+		
+		
 		echo '<div class="post"><img src="site/files/elefant1.jpg" width=200px></div>';
 		
+				
 		echo '<div class="post"><p><b>Search syntax</b>
 	<p>The search is case-insensitive. You can append * to search for words starting with the search term but not preprend *. Words must be 3 letters long at least. You can use NEAR, NOT, AND and OR. 
-	</div>';
-	
-	echo '<div class="post postwarning"><p><b>Notice: Set your magic word now</b></p>
-	<p>OAuth is no longer used for opt-in. Users having joined in with OAuth should add now the magic word to manifest consent. From February 20th, accounts without magic word will not be indexed anymore.
 	</div>';
 	
 	echo '<div class="post"><b><p>More about search</b>
 	<p>If the crawler does not find exact result, it looks for similar results. Click on the avatar to access the user, click on the date to access the post on Mastoton. Click on the image to access original.</div>';
 
 	
-	echo '<div class="post"><p><b>Privacy note </b>
-	<p>This is pure opt-in: If you are not interested, just do not join the index. If you quit the index, your posts will eventually disappear from the index.</p></div>';
-
-	if (!$join) echo $jointheinxex;
 		
-		$pq = '';
+	
+	
+	echo '<div class="post"><p><b>Privacy note </b>
+	<p>This is pure opt-in: If you are not interested, just do not join the index. If you quit the index, your posts will eventually disappear from the index.</p>
+<p><a href="privacy.php">Privacy statement</a></div>';
+
+$pq = '';
 		foreach(popularQueries() as $elem)
 		{
 			$pq .= '<a href="index.php?noindex=1&query='.urlencode($elem['query']).'">'.$elem['query'].'</a><br>';
@@ -164,27 +175,33 @@
 		
 		echo '<div class="post"><b><p>Popular queries</b>
 	<p>'.$pq.'</div>';
+
+
+	if (!$join) echo $jointheinxex;
+	
+	
+
 		
+				
 		echo '<div class="post"><p><b>Implementation</b>
-		<p>Tootfinder uses the public Mastodon API. 
-		The RSS feeds of the followers are consulted on a random frequency. The feeds are indexed in a SQLite database and deleted after 14 days.</p>
+		<p>Tootfinder uses the public Mastodon API for the profile and the JSON feed. The  feeds are consulted on a optimized frequency, indexed in a SQLite database and deleted after 14 days.</p>
 	<p>Check out the <a href="wiki/index.php" target="_blank">Tootfinder Wiki</a></div>';
 
 echo '<div class="post"><p><b>Contact</b>
 		<p><a rel="me" href="https://tooting.ch/@buercher" target="_blank">@buercher@tooting.ch</a>
-	<p>18.2.2023 v1.3<p>
+	<p>v'.$tfVersion.' 2023-02-20<p>
 	';
 	echo getinfo();
 	echo "<p>Index ".indexStatus();
-		
-		
+	echo "</div>";
+	echo '<div class="post"><p><b>Notice: OAuth Users from before February 12th</b></p>
+	<p>OAuth is no longer used for opt-in. Your usernames are now inactive. If you want to havem them reactivated, add the magic word in you profile.
+	</div>';	
 		
 	}		
 	?>
 	</div>
 	<div style="clear:both"></div>
-	
-		
 	
 	
 	

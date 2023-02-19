@@ -5,21 +5,48 @@ if (!defined('CRAWLER')) die('invalid acces');
 /**
  *	functions to process the post for display
  * 
- *  @version 1.3 2023-02-18
+ *  @version 1.4 2023-02-20
  */
 
 function handleContentWarning($s)
 {
-	// hide content warnings
+	// hide old content warnings  to be removed march 8th
 	$s = trim($s);
 	preg_match('#<strong>(.*)</strong>([\S\s]*?)(<[\S\s]*)#',$s,$matches); // content warning is multilanguage. 
 	
 	if ($matches)
 	{
-		return '<div class="contentwarninglabel">'.$matches[1].' '.$matches[2].'</div>'.$matches[3];
+		$m = trim($matches[3]);
+		if (substr($m,0,4)=='<br>') $m = substr($m,4); 
+		$m = str_replace('<hr>','',$m);
+		$m = str_replace('<p></p>','',$m);
+		$line = '<div class="contentwarninglabel">'.$matches[1].' '.$matches[2].'</div><p>'.$m;
+		$line = '<div class="contentwarning" onclick="this.style.visibility=\'visible\'">'.$line.'</div>';
+		$line = str_replace('<p></p>','',$line);
+		return $line;
 
 	}
-	else return $s;
+	
+	// hide new content warnings
+	
+	preg_match('#<contentwarning>(.*?)</contentwarning>([\S\s]*)#',$s,$matches); // content warning is multilanguage. 
+	
+	if ($matches)
+	{
+		$m = trim($matches[2]);
+		if (substr($m,0,4)=='<br>') $m = substr($m,4); 
+		$m = str_replace('<hr>','',$m);
+		$m = str_replace('<p></p>','',$m);
+		$line = '
+<div class="contentwarning" onclick="this.style.visibility=\'visible\'">
+	<div class="contentwarninglabel">Content warning: '.$matches[1].'</div>
+'.$m.'
+</div>';
+		return $line;
+
+	}
+	
+	return $s;
 }
 
 function handleMentions($s)
@@ -100,4 +127,13 @@ function handleMedia($media)
 	return $result;	
 }
 
+function handleHTMLHeader($s)
+{
+	$s = preg_replace('/<!DOCTYPE.*?>/','',$s);
+	$s = str_ireplace('<html>','',$s);
+	$s = str_ireplace('</html>','',$s);
+	$s = str_ireplace('<body>','',$s);
+	$s = str_ireplace('</body>','',$s);
+	return $s;
+}
 

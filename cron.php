@@ -4,7 +4,7 @@
  *	Indexes the crawler. This is called from a cron tab 
  *  In production, htaccess refuses external access
  * 
- *  @version 1.2 2023-02-12
+ *  @version 1.4 2023-02-20
  */
 
 ?>
@@ -26,8 +26,13 @@
 	$ende = $start = time();
 	
 	$echo .= crawl();
-	$echo .= index();
+	
+	
+	
 	$ende = time();
+	$echo .= '<p>'.sprintf('%0d',$ende - $start).' seconds';
+	
+	$echo .= index();
 	
 	$ende = time();
 	$echo .= '<p>'.sprintf('%0d',$ende - $start).' seconds';
@@ -42,6 +47,14 @@
 	$echo .= '<h4>Priority</h4>';
 	$echo .= sqlTable($db,'SELECT label, time2date(priority) as priority FROM users WHERE priority > 0 ORDER BY priority LIMIT 10;');
 	
+	$echo .= '<h4>Content warning</h4>';
+	$echo .= sqlTable($db,"SELECT user, indexdate FROM posts WHERE description LIKE '%contentwarning%' OR description LIKE '%<strong>%' ORDER BY indexdate DESC LIMIT 10;");
+	
+	$db2 = initQueries(true);
+	$echo .= '<h4>Queries</h4>';
+	$limit = date('Y-m-d',strtotime('-1 day', time()));
+	$echo .= sqlTable($db2,"SELECT DISTINCT query, count(query) as c FROM queries WHERE results > 0 AND date > '$limit' GROUP BY query ORDER BY c DESC limit 10;");
+		
 	$ende = time();
 	
 	$echo .= '<p>'.sprintf('%0d',$ende - $start).' seconds';
@@ -49,8 +62,6 @@
 	file_put_contents('site/job.txt',$echo);
 	
 	echo $echo;
-
-
 
 	?>	 
 </body>

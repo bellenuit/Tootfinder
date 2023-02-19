@@ -9,13 +9,15 @@ Tootfinder indexes recent posts from consenting Mastodon users. The users manife
 
 Users can revoke the consent by removing the magic word on the profile. Mentions are not displayed in the search results.
 
-Tootfinder uses the public profile (HTML) and the RSS feed from the user which might sometimes be an Atom feed. The posts are indexed in an virtual FTS3 table of a SQLite database.
+Tootfinder uses the public API (JSON, fallback to HTML) and the public API feed from the user. The posts are indexed in an virtual FTS3 table of a SQLite database.
 
 The website is https://tootfinder.ch
 
 There is a wiki https://tootfinder.ch/wiki/index.php 
 
 which has also a list of current issues https://tootfinder.ch/wiki/index.php?name=issues
+
+There is a privacy statement https://tootfinder.ch/privacy.php
 
 Folder structure
 
@@ -31,6 +33,7 @@ Folder structure
 	- user.php handle users
 	- utilities.php the rest
 - site/
+	- bak/ last copy of the feed
 	- configuration.php
 	- feeds/ temporary copies of remote feeds
 	- files/ website files (css and images)

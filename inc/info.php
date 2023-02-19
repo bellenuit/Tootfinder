@@ -4,7 +4,7 @@
 /**
  *	info functions for statistics
  * 
- *  @version 1.2 2023-02-12
+ *  @version 1.4 2023-02-20
  */
 	
 	
@@ -47,8 +47,8 @@ function popularQueries()
 {
 	
 	if (!$db = initQueries(true)) return array();
-	
-	$sql = 'SELECT DISTINCT query, count(query) as c FROM queries WHERE results > 0 GROUP BY query ORDER BY c DESC limit 5'; 
+	$limit = date('Y-m-d',strtotime('-1 day', time()));
+	$sql = "SELECT DISTINCT query, count(query) as c FROM queries WHERE results > 0 and date > '$limit' GROUP BY query ORDER BY c DESC limit 5"; 
 		$list = $db->query($sql);
 	
 	$result = array();

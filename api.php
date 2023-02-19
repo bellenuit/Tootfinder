@@ -10,6 +10,7 @@
 if (!defined('CRAWLER')) die('invalid acces');
 
 $tfRoot = dirname(__FILE__);
+$tfVersion = '1.4';
 
 include_once $tfRoot.'/inc/utilities.php';
 include_once $tfRoot.'/inc/db.php';
