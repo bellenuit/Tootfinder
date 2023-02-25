@@ -112,7 +112,13 @@ function handleMedia($media)
 			$orig = $fields[1];
 			$cardtitle = $fields[2];
 			$carddescription = $fields[3];
-			$result .= '<div class="card"><a href="'.$orig.'" target="_blank"><img src="'.$thumb.'" class="card"><p class="card"><b>'.$cardtitle.'</b><br>'.$carddescription.'</a></div>';
+			
+			if ($thumb || $carddescription)
+			{
+			    if ($thumb) $thumb = '<img src="'.$thumb.'" class="card">';
+				$result .= '<div class="card"><a href="'.$orig.'" target="_blank">'.$thumb.'<p class="card"><b>'.$cardtitle.'</b><br>'.$carddescription.'</a></div>';
+			
+			}
 		}
 		else  // 1-3 fields
 		{

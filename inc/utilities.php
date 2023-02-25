@@ -4,7 +4,7 @@
 /**
  *	general purpose functions
  * 
- *  @version 1.3 2023-02-18
+ *  @version 1.5 2023-02-25
  */
 	
 if (!defined('CRAWLER')) die('invalid acces');
@@ -49,6 +49,7 @@ function getRemoteString($url)
         curl_setopt($c, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($c, CURLOPT_SSL_VERIFYPEER, 0);
         curl_setopt($c, CURLOPT_TIMEOUT,5);
+        curl_setopt($c, CURLOPT_USERAGENT, 'Tootfinder/1.1 (+https://www.tootfinder.ch/index.php)');
         curl_setopt($c, CURLOPT_URL, $url);
         $contents = curl_exec($c);
         curl_close($c);
@@ -88,5 +89,11 @@ function xml2array( $xmlObject, $out = array () )
             $out[$index] = ( is_object ( $node ) ||  is_array ( $node ) ) ? xml2array ( $node ) : $node;
 
         return $out;
+}
+
+function debugLog($s)
+{
+	global $tfDebug;
+	$tfDebug .= $s;
 }
 

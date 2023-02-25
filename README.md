@@ -1,7 +1,6 @@
 # Tootfinder
 
-matti@belle-nuit.com @buercher@tooting.ch
-MIT license 2023
+MIT license Copyright (c) 2023 Matthias Bürcher matti@belle-nuit.com @buercher@tooting.ch
 
 This is the source code of the search enginge Tootfinder.
 
