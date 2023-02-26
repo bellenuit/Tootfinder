@@ -3,7 +3,7 @@
 /**
  *	crawl and index functions
  * 
- *  @version 1.4 2023-02-20
+ *  @version 1.5 2023-02-25
  */
 	
 if (!defined('CRAWLER')) die('invalid acces');
@@ -20,6 +20,7 @@ function crawl($usr=array())
 	if (count($usr)) 
 	{
 		$list = $usr;
+		debugLog('<p>crawl '.@$usr[0]['label']);
 		$forcerefresh = true;
 	}
 	else
@@ -33,13 +34,15 @@ function crawl($usr=array())
 		// profile
 		$label = $user['label'];
 		
-		$localpath = $tfRoot.'/site/profiles/'.$user['label'].'.json';		
+		$localpath = $tfRoot.'/site/profiles/'.$user['label'].'.json';
+		debugLog('<p>'.$localpath);		
 		
-		if ($forcerefresh || !file_exists($localpath) || time()-filemtime($localpath) > 3600 )
+		if ($forcerefresh || !file_exists($localpath) || time()-filemtime($localpath) > 3600 || filesize($localpath) < 300 )
 		{			
 			// public API seems to work and returns note (bio), fields (label) and id
 			
 			$url = 'https://'.$user['host'].'/api/v1/accounts/lookup?acct='.$user['label']; 
+			debugLog('<p><a href="'.$url.'">'.$url.'</a>');
 			
 			$shoppinglist[$url]=$localpath;	
 			
@@ -69,7 +72,8 @@ function crawl($usr=array())
 		
 		if ($id)
 		{
-			$url = 'https://'.$user['host'].'/api/v1/accounts/'.$id.'/statuses';		
+			$url = 'https://'.$user['host'].'/api/v1/accounts/'.$id.'/statuses/?limit=40';
+			// we try to get as most posts (max 40), knowing that the feed contains also non public posts.	
 	
 			$shoppinglist[$url]=$localpath;			
 		}
@@ -80,6 +84,8 @@ function crawl($usr=array())
 			$shoppinglist[$url]=$localpath;
 			
 		}
+		debugLog('<p><a href="'.$url.'">'.$url.'</a>');
+		
 		if (!file_exists($localpath)) touch($localpath);
 		$fc++;
 			
@@ -94,8 +100,7 @@ function crawl($usr=array())
 	}
 	
 	$verbose .= '<p>Crawl Profiles: '.$pc;
-	$verbose .= ' Feeds: '.$fc;
-	
+	$verbose .= ' Feeds: '.$fc;	
 	
 	getRemoteFiles($shoppinglist);
 	
@@ -105,14 +110,16 @@ function crawl($usr=array())
 
 function index($usr = '')
 {
-	global $tfRoot;		
+	global $tfRoot;	
+	
+	if ($usr) debugLog('<p>Indexing: '.$usr);
+	
     
     $journal = array();
 	$journal []= 'BEGIN TRANSACTION; ';
 	
 	// clean old posts
 	$limit = date('Y-m-d',strtotime('-14 day', time()));
-	
 	
 	if (rand(0,100)>98) $journal []= "DELETE FROM posts WHERE pubdate < '".$limit."'; "; 
 
@@ -127,8 +134,6 @@ function index($usr = '')
 	$pc = 0;
 	$uc = 0;
 	$prioritystring = '';
-	
-		
 	
 	foreach($files as $file)
 	{			
@@ -164,12 +169,13 @@ function index($usr = '')
 				@unlink($tfRoot.'/site/bak/'.$label.'.json');
 				@unlink($tfRoot.'/site/bak/'.$label.'.rss');
 				// delete profile files
-				@unlink($tfRoot.'/site/profile/'.$usr.'.json');
-				@unlink($tfRoot.'/site/profile/'.$usr.'.html');
+				@unlink($tfRoot.'/site/profile/'.$label.'.json');
+				@unlink($tfRoot.'/site/profile/'.$label.'.html');
 			}
 			
 		}
 	
+		
 		$magic = validUser($label);
 		
 		if (!$magic) 
@@ -177,7 +183,7 @@ function index($usr = '')
 			$verbose .=  '<p>Invalid user: <a href="https://'.$host.'/users/'.$user.'" target="_blank">'.$label.'</a>';
 			// we do not delete the user immediately, because the profile page may also have been on error.
 			// we wait until there is no new post
-			//echo 'not magic';
+
 			$db2 = init(true);
 			$sql = "SELECT count(link) as c FROM posts where user = '$label';";
 			$up = $db2->querySingle($sql);
@@ -193,21 +199,31 @@ function index($usr = '')
 			continue;
 		}
 		
+		if ($usr) debugLog('<p>magic');
+		
 		// we do need follower count
 		$fields = explode('::',$magic);
 		$followers = @$fields[1];
 				
-		if (!file_exists($file)) continue;		
+		if (!file_exists($file)) 
+		{
+			if ($usr) debugLog('<p>no file');
+			continue;		
+		}
 		$s = file_get_contents($file);	
 		
 		if (!$s)
 		{
+			if ($usr) debugLog('<p>Rejected: '.basename($file));
+			
 			rename($file,$tfRoot.'/site/rejected/empty-'.basename($file));
 			$priority = time()+86400;
 			$journal []= "UPDATE users SET priority = $priority WHERE label = '".$label."' ; ";
 
 			continue;
 		}
+		
+		if ($usr) debugLog('<p><tt>'.$s.'</tt>');
 		
 		if ($format == 'json') $feed = readJSONfeed($s,$label, $host, $user,$file);
 		else $feed = readRSSFeed($s,$file);
@@ -268,8 +284,7 @@ function index($usr = '')
 				$pc++;
 			}
 			
-		}
-		
+		}	
 				
 		// we calculated when the next post is likely to happen, but we wait at most 1 day
 		$period = round(($maxpubdate - $minpubdate ) / ($postcount+1));
@@ -285,21 +300,14 @@ function index($usr = '')
 		
 		$okfiles []= $file;
 	
-	}
-	
-
-
- 
+	} 
 	
 	$journal []= 'COMMIT; ';
 	
 	if (rand(0,100)>98) $journal []= " VACUUM; ";
 		
-	$q = join(PHP_EOL,$journal);
-	
-	
+	$q = join(PHP_EOL,$journal);		
 	$db = init();
-
 	if (!$db->exec($q))
 	{
 		echo '<p>index error '.$db->lastErrorMsg().' '.$q;
@@ -313,7 +321,7 @@ function index($usr = '')
 		@rename($file,$bak);
 	}
 	
-	$verbose .=  '<p>Index users: '.count($labels);
+	$verbose .=  '<p>Index feeds: '.count($files);
 	$verbose .=  ' Unchanged: '.$uc;
 	$verbose .=  ' Posts: '.$pc;
 	
@@ -340,19 +348,27 @@ function readJSONFeed($s, $label, $host, $user, $file)
 	
 	foreach($j as $post)
 	{
+		debugLog('<p>'.@$post['id']);
+		
 		$list = array();
 		$list['medias'] = array();
 		
 		if (@$post['in_reply_to_id'])  continue; // replying
 		if (@$post['in_reply_to_account_id'])  continue; // replying
 
-		if (!@$post['visibiliy'] != 'public' )  continue; // private
+		if (@$post['visibility'] != 'public')  continue; // private
+
+		debugLog(' '.@$post['visibility']);
+		
 		if (!@$post['content']) continue; // boost
 		
 		$list['avatar'] = @$post['account']['avatar'];
 		$list['id'] = @$post['id'];
 		$list['link'] = 'https://'.$host.'/@'.$user.'/'.$list['id'] ;
 		$list['description'] = trim(@$post['content']);
+		
+		debugLog(' '.@$post['account']['id']);
+		debugLog(' <tt>'.substr(htmlspecialchars($list['description']),0,80).'</tt>');
 
 		if (@$post['sensitive'])
 		{

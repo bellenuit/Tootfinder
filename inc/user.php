@@ -4,11 +4,13 @@
  *	functions related to users
  * 
  * 
- *  @version 1.4 2023-02-20
+ *  @version 1.5 2023-02-25
  */
 	
 function addUser($label)
 {
+	debugLog('<p>addUser '.$label);
+	
 	// check the format of the user label
 	
 	$label = trim($label);
@@ -27,27 +29,31 @@ function addUser($label)
 	// we check host-meta first
 	
 	$url = 	'https://'.$host.'/.well-known/host-meta';
+	debugLog('<p><a href="'.$url.'">'.$url.'</a>');
 	if ($s = getRemoteString($url))
 	{
+		debugLog('<p><tt>'.htmlspecialchars($s).'</tt>');
 		preg_match('/template="https:\/\/(.*?)\/\.well-known\/webfinger/',$s,$matches);
 		if (isset($matches[1])) $host = $dict['host'] = $matches[1];
 	}
 	
 	// handle webfinger
 	$url = 	'https://'.$host.'/.well-known/webfinger?resource='.substr($label,1); 
+	debugLog('<p><a href="'.$url.'">'.$url.'</a>');
 	if ($s = getRemoteString($url))
 	{
+		debugLog('<p><tt>'.htmlspecialchars($s).'</tt>');
 		$j = json_decode($s,true);
-
-		foreach($j['links'] as $l )
-		{
-			if (@$l['rel']=='self') $link = @$l['href']; else continue;
-			preg_match('/https:\/\/(.*?)\/users\/(.*?)$/',$link,$matches);
-			if ($matches) {
-				$host = $dict['host'] = $matches[1];
-				$user = $dict['user'] = $matches[2];
+		if (is_array($j) && isset($j['links']))
+			foreach($j['links'] as $l )
+			{
+				if (@$l['rel']=='self') $link = @$l['href']; else continue;
+				preg_match('/https:\/\/(.*?)\/users\/(.*?)$/',$link,$matches);
+				if ($matches) {
+					$host = $dict['host'] = $matches[1];
+					$user = $dict['user'] = $matches[2];
+				}
 			}
-		}
 		
 	}	
 
@@ -60,7 +66,10 @@ function addUser($label)
 		return '<p><span class="error">I cannot find the profile page <b><a href="'.substr($err,10).'" target="_blank">'.substr($err,10).'</b></span>';
 
 	
-	if (!$magic = validUser($label)) return '<p><span class="error">Your fediverse profile is missing the magic word. Please proceed to step 1 first and then join again.</span>';
+	if (!$magic = validUser($label, true)) return '<p><span class="error">Your fediverse profile is missing the magic word. Please proceed to step 1 first and then join again.</span>';
+	
+	
+	debugLog('<p>Valid user. Going to index.');
 	
 	// we do not need follower count
 	
@@ -85,20 +94,24 @@ function addUser($label)
 	
 	$db->close();
 	
+	
+	crawl(array(array('host'=>$host,'user'=>$user,'label'=>$label)));
 	index($label);
 	
 	return '<p><span class="ok">Magic word <b>'.$magic.'</b> found. From now on, you are indexed.</span>';
 	
 }
 	
-function validUser($label)
+function validUser($label, $refresh = false)
 {
 	global $tfRoot;
+	debugLog('<p>validUser '.$label);
+	
 	
 	preg_match('/@([a-zA-Z0-9_]+)@([a-zA-Z0-9_-]+\.[a-zA-Z0-9.-]+)/',$label,$matches); // @user@example.com // can have two . in domain!
 	if (count($matches)<3) return false; 
-	$host = $matches[1];
-	$user = $matches[2];
+	$host = $matches[2];
+	$user = $matches[1];
 
 	$localpath = $tfRoot.'/site/profiles/'.$label.'.json';
 	
@@ -107,26 +120,31 @@ function validUser($label)
 		$head = '';
 		$followers = 0;
 		$s = file_get_contents($localpath);
+		debugLog('<p><tt>'.htmlspecialchars($s).'</tt>');
 		$j = json_decode($s,true);
 		
-		if (isset($j['error'])) 
+		//echo '*'; // print_r($j);
+		
+		if (isset($j['error']) || isset($j['errors'])) 
 		{
-			switch($j['error'])
-			{
-				case 'Record not found': 
-				case 'Unauthorized: token not supplied': 
-				case 'This method requires an authenticated user': 
-				
-				// @rename($localpath,$tfRoot.'/site/rejected/profile-'.$label.'.json');
-				
-				// fallback to html
 				
 				$localpath = $tfRoot.'/site/profiles/'.$label.'.html';
+				debugLog('<p>'.$localpath);
 				
-				if (!file_exists($localpath) || time()-filemtime($localpath) > 3600)
+				if (!file_exists($localpath) || time()-filemtime($localpath) > 3600 ||
+				 !filesize($localpath) || filesize($localpath) < 300 || $refresh)
 				{
+					
 					$url = 'https://'.$host.'/users/'.$user; 
-					$s = getRemoteString($url);					
+					debugLog('<p><a href="'.$url.'">'.$url.'</a>');
+					$s = getRemoteString($url);	
+					
+					if (strlen($s) < 100)
+					{
+						$url = 'https://'.$host.'/@'.$user; 
+						$s = getRemoteString($url);	
+					}
+									
 					file_put_contents($localpath,$s);				
 				} 
 				else
@@ -134,10 +152,10 @@ function validUser($label)
 					$s = file_get_contents($localpath);
 				}
 				
-				$p1 = strpos($s,'<head>');
-				$p2 = strpos($s,'</head>',$p1);
-				$head = substr($s,$p1,$p2);
+				debugLog('<p><tt>'.htmlspecialchars($s).'</tt>');
 				
+				$head = $s; // depending on instance, the magix word can be in the header or in the body
+								
 				// now we search also for followers
 				// <meta content='1.27K Posts, 460 Following, 362 Followers · #...
 		
@@ -147,7 +165,7 @@ function validUser($label)
 				if (count($matches)) $followers = $matches[1];
 				if (stristr($followers,'K')) $followers = 1000 * str_replace('K','',$followers);
 				if (stristr($followers,'M')) $followers = 1000000 * str_replace('M','',$followers);
-			}
+			//}
 		}
 		else
 		{
@@ -162,6 +180,8 @@ function validUser($label)
 		if (stristr($head,'tootfinder')) return 'tootfinder::'.$followers;
 		if (stristr($head,'tfr')) return 'tfr::'.$followers;
 		if (stristr($head,'searchable')) return 'searchable::'.$followers;
+		
+		debugLog('<p>not valid');
 	}
 	
 		

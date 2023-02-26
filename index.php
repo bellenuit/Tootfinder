@@ -9,8 +9,7 @@
  *
  *  matti@belle-nuit.com
  *  @buercher@tooting.ch
- *
- *  @version 1.4 2023-02-20
+ *  @version 1.5 2023-02-25
  */
 
 @define('CRAWLER',true);
@@ -40,13 +39,9 @@ if ($name && substr($name,0,9)=='rest/api/') { include 'inc/rest.php'; exit; }
 <body>
 	<div class="header">
 	<h1>Tootfinder</h1>
-	<h4><i>Proof of concept of an opt-in global Mastodon search. <a href="index.php?join=1">Join the index!</a></i></h4>
-
-	<?php
-
-
-
-
+	<h4><i>Proof of concept of an opt-in global Mastodon full text search. <a href="index.php?join=1">Join the index!</a></i></h4>
+	
+	<?php 
 	if ($submitjoin)
 	{
 		 $msg = addUser($userlabel);
@@ -83,8 +78,7 @@ if ($name && substr($name,0,9)=='rest/api/') { include 'inc/rest.php'; exit; }
 	        $list[$row['link']]=1;
 
 	        if ($row['found']<2 && !$similar) { echo '<div class="post">No exact results. Similar results found.</div>'; $similar = true;}
-
-	        preg_match('/@([a-zA-Z0-9]+)@([a-zA-Z0-9]+\.[a-zA-Z0-9]+)/',$row['user'],$matches);
+          preg_match('/@([a-zA-Z0-9_]+)@([a-zA-Z0-9_]+\.[a-zA-Z0-9_]+)/',$row['user'],$matches); 
 	        $username = @$matches[1];
 	        $host = @$matches[2];
 	        $signature = '<span class="signature">'.$row['user'].'<br><a href="'.$row['link'].'" target="_blank">'.$row['pubdate'].'</a></span>';
@@ -136,7 +130,7 @@ if ($name && substr($name,0,9)=='rest/api/') { include 'inc/rest.php'; exit; }
 		<p><input type = "submit" name ="submitjoin" value="Join">
 	</form></div>
 		<div class="post"><p><b>Quit the index</b></p>
-	    <p>If you change your mind, just remove the magic word from your profile. Tootfinder will stop indexing your account and your toots will disappear from our database after 14 days.
+	  <p>If you change your mind, just remove the magic word in your profile. Tootfinder will stop indexing your account and your toots will eventually disappear from our database (after 14 days).
 	    </div>';
 
 		if ($join) echo $jointheinxex;
@@ -149,7 +143,14 @@ if ($name && substr($name,0,9)=='rest/api/') { include 'inc/rest.php'; exit; }
 		echo '<div class="post"><img src="site/files/elefant1.jpg" width=200px></div>';
 
 		echo '<div class="post"><p><b>Search syntax</b>
-	<p>The search is case-insensitive. You can append * to search for words starting with the search term. Preprending * is not supported. Words must be 3 letters long at least. You can use NEAR, NOT, AND and OR.
+
+	<p>The search is case-insensitive. You can append * to the end of a word. You can use NEAR, OR and the prefix -. 
+		<ul>
+		<li>san franc*</li>
+		<li>san NEAR francisco</li>
+	    <li>san OR francisco</li>
+	    <li>san -francisco</li>
+		</ul>
 	</div>';
 
 	echo '<div class="post"><b><p>More about search</b>
@@ -183,9 +184,12 @@ echo '<div class="post"><p><b>Contact</b>
 	echo "</div>";
 	echo '<div class="post"><p><b>Notice: OAuth Users from before February 12th</b></p>
 	<p>OAuth is no longer used for opt-in. Your usernames are now inactive. If you want to have them reactivated, add the magic word in you profile.
+
 	</div>';
 
 	}
+
+
 	?>
 	</div>
 	<div style="clear:both"></div>
