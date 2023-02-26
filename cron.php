@@ -4,8 +4,9 @@
  *	Indexes the crawler. This is called from a cron tab 
  *  In production, htaccess refuses external access
  * 
- *  @version 1.5 2023-02-25
+ *  @version 1.6 2023-02-26
  */
+  
 
 ?>
 <html>
@@ -17,15 +18,16 @@
 
 	ini_set('max_execution_time', '300');
 	define('CRAWLER',true);
-	include 'api.php';
-	
+	include 'api.php';	
 			
 	$userlabel = trim(preg_replace('/\t+/', '',filter_input(INPUT_GET, 'userlabel', FILTER_SANITIZE_STRING)));
 
 	$echo = '<form method = "get" action ="cron3.php"> 
-		<input type = "text" name = "userlabel" placeholder="@user@example.com" value = "'.$userlabel.'"> <input type = "submit" name ="submitjoin" value="Join Debug"> 
-		<input type = "submit" name ="submitdelete" value="Delete user and posts" color="red"></form>';
+		<input type = "text" name = "userlabel" placeholder="" value = "'.$userlabel.'"> <input type = "submit" name ="submitjoin" value="Join Debug"> 
+		<input type = "submit" name ="submitquery" value="Query"> 
+		<input type = "submit" name ="submitdelete" value="Delete user and posts" style="color:red"></form>';
 		
+
 	
 	if ($userlabel && isset($_GET['submitjoin']))
 	{
@@ -44,6 +46,18 @@
 		 	
 		 }
 	}
+	
+    elseif ($userlabel && isset($_GET['submitquery']))
+	{
+		 $tfDebug = '';
+		 $msg = query($userlabel);
+	
+		 $echo .= $tfDebug;
+		 $echo .= '<pre>'.print_r($msg, true).'</pre>';
+		 	
+		 
+	}
+
 	
 	elseif ($userlabel && isset($_GET['submitdelete']))
 	{
@@ -65,6 +79,9 @@
 
 	else
 	{	
+		$echo .= '<p>index.db '.round(filesize($tfRoot.'/site/index.db')/1024/1024).' MB';
+		$echo .= '<br>queries.db '.round(filesize($tfRoot.'/site/queries.db')/1024/1024).' MB';
+		
 		$ende = $start = time();
 		
 		$echo .= crawl();

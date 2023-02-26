@@ -5,7 +5,7 @@ if (!defined('CRAWLER')) die('invalid acces');
 /**
  *	functions to process the post for display
  * 
- *  @version 1.4 2023-02-20
+ *  @version 1.6 2023-02-26
  */
 
 function handleContentWarning($s)
@@ -54,7 +54,7 @@ function handleMentions($s)
 	// remove all mentions 
 	
 	$doc = new DOMDocument();
-	$s  = mb_convert_encoding($s , 'HTML-ENTITIES', 'UTF-8'); 
+	$s  = mb_convert_encoding($s , 'HTML-ENTITIES', 'UTF-8');  // DOM does not reasd unicode
 	@$doc->loadHTML($s);
 	foreach ($doc->getElementsByTagName('span') as $item)
 	{
@@ -67,7 +67,9 @@ function handleMentions($s)
 		} 
 		
 	}
-	return $doc->saveHTML();	
+	$s  = $doc->saveHTML();	
+	$s  = mb_convert_encoding($s , 'UTF-8', 'HTML-ENTITIES'); // give back unicode for proper fulltext search of japanese
+	return $s;
 }
 
 function handleHashtags($s)
@@ -113,6 +115,10 @@ function handleMedia($media)
 			$cardtitle = $fields[2];
 			$carddescription = $fields[3];
 			
+			// remove single quotes in card description
+			$carddescription = preg_replace("/^'/",'',$carddescription);
+			$carddescription = preg_replace("/'$/",'',$carddescription);
+			
 			if ($thumb || $carddescription)
 			{
 			    if ($thumb) $thumb = '<img src="'.$thumb.'" class="card">';
@@ -141,5 +147,41 @@ function handleHTMLHeader($s)
 	$s = str_ireplace('<body>','',$s);
 	$s = str_ireplace('</body>','',$s);
 	return $s;
+}
+
+function encodeSpacelessLanguage($s)
+{
+	// japanese
+	// source https://gist.github.com/terrancesnyder/1345094
+	
+	$s = preg_replace('/([一-龠]|[ぁ-ゔ]|[ァ-ヴー]|[々〆〤ヶ])/u','$1 ',$s); 
+	// https://stackoverflow.com/questions/6787716/regular-expression-for-japanese-characters
+	// Japanese katakana, hiragana and dashes
+	// removed alphanumeric from snippet
+	
+	return $s;
+	
+}
+
+function decodeSpacelessLanguage($s)
+{
+	// japanese
+	// source https://gist.github.com/terrancesnyder/1345094
+	
+	$s = preg_replace('/([一-龠]|[ぁ-ゔ]|[ァ-ヴー]|[々〆〤ヶ])\s/u','$1',$s); 
+	// https://stackoverflow.com/questions/6787716/regular-expression-for-japanese-characters
+	// Japanese katakana, hiragana and dashes
+	// removed alphanumeric from snippet
+	
+	return $s;
+	
+}
+
+function expandableSnippet($s)
+{
+
+     $script = 'ch = this.parentNode.children; for (var i = 0; i < ch.length; i++) { ch[i].style.display = "block"; }';     
+     return "<p><tt><div><a onclick='$script'>+</a><div style='display:none'><p>".htmlspecialchars($s)."</a></div></div></tt>";
+     
 }
 

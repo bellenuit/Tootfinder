@@ -4,7 +4,7 @@
 /**
  *	query functions
  * 
- *  @version 1.3 2023-02-18
+ *  @version 1.6 2023-02-26
  */	
 	
 if (!defined('CRAWLER')) die('invalid acces');
@@ -16,6 +16,7 @@ function query($q, $doindex = true, $newposts = false, $allposts = false)
 {
 	$db = init(true);
 	$query0 = $q;
+	$q = encodeSpacelessLanguage($q);
 	$q = SQLite3::escapeString($q);
 	$planb = false;
 	$order = ' ORDER BY score DESC '; if ($newposts) $order = ' ORDER BY pubdate DESC ';
@@ -27,7 +28,7 @@ function query($q, $doindex = true, $newposts = false, $allposts = false)
   $order
   $limit ";
   
-	
+	debugLog('<p>'.$sql);
 	$list = $db->query($sql);
 	
 	if (NULL == $list->fetchArray(SQLITE3_ASSOC)) 
@@ -41,7 +42,7 @@ function query($q, $doindex = true, $newposts = false, $allposts = false)
   WHERE posts MATCH '$q'
   $order
   $limit ";
-
+  		debugLog('<p>Starred: '.$sql);
 		
 		$list = $db->query($sql);
 		
@@ -54,7 +55,7 @@ function query($q, $doindex = true, $newposts = false, $allposts = false)
 			  WHERE soundex MATCH '$q'
 	  $order
 	  $limit ";
-
+	  		debugLog('<p>Soundex: '.$sql);
 	  
 	  		$list = $db->query($sql); 
   		
@@ -70,7 +71,11 @@ function query($q, $doindex = true, $newposts = false, $allposts = false)
 	{
 		if (!validUser($d['user'])) continue;
 
-		$rc++;	
+		$rc++;
+		
+		$d['description-jp'] = $d['description'];
+		$d['description'] = decodeSpacelessLanguage($d['description']);	
+		$d['media'] = decodeSpacelessLanguage($d['media']);	
 			
 		$result[] = $d;
 	}
@@ -86,10 +91,6 @@ function query($q, $doindex = true, $newposts = false, $allposts = false)
 		$q = SQLite3::escapeString($query0);
 		$sql2 = "INSERT INTO queries (query, date, results) VALUES ('".$q."','".$date."',".$rc.");"; 
 		if (!$db->exec($sql2)) echo '<p>index error '.$db->lastErrorMsg(); 
-			// clean old posts
-		$limit = date('Y-m-d',strtotime('-14 day', time()));
-
-		if (rand(0,100)>98) $journal []= "DELETE FROM posts WHERE pubdate < '".$limit."'; VACUUM ; "; 
 		
 		$sql2 = "DELETE FROM queries WHERE date < '".$limit."'; VACUUM ;"; 
 		if (rand(0,1000)>998) $db->exec($sql2); 

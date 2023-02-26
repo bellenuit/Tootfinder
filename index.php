@@ -9,7 +9,7 @@
  *
  *  matti@belle-nuit.com
  *  @buercher@tooting.ch
- *  @version 1.5 2023-02-25
+ *  @version 1.6 2023-02-26
  */
 
 @define('CRAWLER',true);
@@ -39,7 +39,7 @@ if ($name && substr($name,0,9)=='rest/api/') { include 'inc/rest.php'; exit; }
 <body>
 	<div class="header">
 	<h1>Tootfinder</h1>
-	<h4><i>Proof of concept of an opt-in global Mastodon full text search. <a href="index.php?join=1">Join the index!</a></i></h4>
+	<h4><i>Opt-in global Mastodon full text search. <a href="index.php?join=1">Join the index!</a></i></h4>
 	
 	<?php 
 	if ($submitjoin)

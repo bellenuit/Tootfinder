@@ -3,7 +3,7 @@
 /**
  *	crawl and index functions
  * 
- *  @version 1.5 2023-02-25
+ *  @version 1.6 2023-02-26
  */
 	
 if (!defined('CRAWLER')) die('invalid acces');
@@ -223,7 +223,7 @@ function index($usr = '')
 			continue;
 		}
 		
-		if ($usr) debugLog('<p><tt>'.$s.'</tt>');
+		if ($usr) debugLog(expandableSnippet($s));
 		
 		if ($format == 'json') $feed = readJSONfeed($s,$label, $host, $user,$file);
 		else $feed = readRSSFeed($s,$file);
@@ -244,14 +244,18 @@ function index($usr = '')
 			
 			
 			$avatar = SQLite3::escapeString($post['avatar']);
-			$link = SQLite3::escapeString($post['link']);	
+			$link = SQLite3::escapeString($post['link']);
 			
 			$description = handleMentions($post['description']);	
+			
+			$description = encodeSpacelessLanguage($description);
 			
 			if(is_array($post['medias']))
 				$media = join('::',$post['medias']);
 			else
 				$media = '';
+			$media = encodeSpacelessLanguage($media);
+				
 			$soundex = SQLite3::escapeString(soundexLong($description.' '.$label.' '.$media.' '));
 			$media = SQLite3::escapeString($media);
 			$description = SQLite3::escapeString($description);	
@@ -304,7 +308,8 @@ function index($usr = '')
 	
 	$journal []= 'COMMIT; ';
 	
-	if (rand(0,100)>98) $journal []= " VACUUM; ";
+	$limit = date('Y-m-d',strtotime('-14 day', time()));
+	if (rand(0,100)>98) $journal []= "DELETE FROM posts WHERE pubdate < '".$limit."'; VACUUM ; "; 
 		
 	$q = join(PHP_EOL,$journal);		
 	$db = init();
@@ -368,7 +373,7 @@ function readJSONFeed($s, $label, $host, $user, $file)
 		$list['description'] = trim(@$post['content']);
 		
 		debugLog(' '.@$post['account']['id']);
-		debugLog(' <tt>'.substr(htmlspecialchars($list['description']),0,80).'</tt>');
+		debugLog(' <tt>'.substr(htmlspecialchars($list['description']),0,140).'</tt>');
 
 		if (@$post['sensitive'])
 		{

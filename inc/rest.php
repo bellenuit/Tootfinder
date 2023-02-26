@@ -2,7 +2,7 @@
 /**
  *	REST API
  * 
- *  @version 1.3 2023-02-18
+ *  @version 1.6 2023-02-26
  */	
  
  
@@ -89,7 +89,7 @@ foreach($list as $v)
 					elseif (count($fields)>1)
 					{
 						$ma = array();
-						$ma['tyoe'] = 'image'; 
+						$ma['type'] = 'image'; 
 						$ma['preview_url'] = $fields[0]; 
 						$ma['url'] = @$fields[1]; 
 						$ma['description'] = @$fields[2]; 

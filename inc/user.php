@@ -4,7 +4,7 @@
  *	functions related to users
  * 
  * 
- *  @version 1.5 2023-02-25
+ *  @version 1.5 2023-02-26
  */
 	
 function addUser($label)
@@ -32,7 +32,7 @@ function addUser($label)
 	debugLog('<p><a href="'.$url.'">'.$url.'</a>');
 	if ($s = getRemoteString($url))
 	{
-		debugLog('<p><tt>'.htmlspecialchars($s).'</tt>');
+		debugLog(expandableSnippet($s));
 		preg_match('/template="https:\/\/(.*?)\/\.well-known\/webfinger/',$s,$matches);
 		if (isset($matches[1])) $host = $dict['host'] = $matches[1];
 	}
@@ -42,7 +42,7 @@ function addUser($label)
 	debugLog('<p><a href="'.$url.'">'.$url.'</a>');
 	if ($s = getRemoteString($url))
 	{
-		debugLog('<p><tt>'.htmlspecialchars($s).'</tt>');
+		debugLog(expandableSnippet($s));
 		$j = json_decode($s,true);
 		if (is_array($j) && isset($j['links']))
 			foreach($j['links'] as $l )
@@ -120,7 +120,7 @@ function validUser($label, $refresh = false)
 		$head = '';
 		$followers = 0;
 		$s = file_get_contents($localpath);
-		debugLog('<p><tt>'.htmlspecialchars($s).'</tt>');
+		debugLog(expandableSnippet($s));
 		$j = json_decode($s,true);
 		
 		//echo '*'; // print_r($j);
@@ -152,7 +152,7 @@ function validUser($label, $refresh = false)
 					$s = file_get_contents($localpath);
 				}
 				
-				debugLog('<p><tt>'.htmlspecialchars($s).'</tt>');
+				debugLog(expandableSnippet($s));
 				
 				$head = $s; // depending on instance, the magix word can be in the header or in the body
 								
