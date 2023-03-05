@@ -3,14 +3,14 @@
 /**
  *	main entry point, includes all function
  * 
- *  @version 1.6 2023-02-26
+ *  @version 1.7 2023-03-05
  */
 	
 	
 if (!defined('CRAWLER')) die('invalid acces');
 
 $tfRoot = dirname(__FILE__);
-$tfVersion = '1.6';
+$tfVersion = '1.7';
 
 include_once $tfRoot.'/inc/utilities.php';
 include_once $tfRoot.'/inc/db.php';

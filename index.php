@@ -9,7 +9,7 @@
  *
  *  matti@belle-nuit.com
  *  @buercher@tooting.ch
- *  @version 1.6 2023-02-26
+ *  @version 1.7 2023-03-05
  */
 
 @define('CRAWLER',true);
@@ -27,12 +27,17 @@ $name = filter_input(INPUT_GET, 'name', FILTER_SANITIZE_STRING);
 $doindex = 1 - $noindex;
 
 if ($name && substr($name,0,9)=='rest/api/') { include 'inc/rest.php'; exit; }
+if ($name && substr($name,0,15)=='search/noindex/') { $query = substr($name,15);  $noindex = 1; } 
+elseif ($name && substr($name,0,7)=='search/') { $query = substr($name,7);  }  // support for pretty URL
+elseif ($name && substr($name,0,13)=='tags/noindex') { $query = '#'.substr($name,13); $noindex = 1;  } 
+elseif ($name && substr($name,0,5)=='tags/') { $query = '#'.substr($name,5);  }  // support for pretty URL for tag search
 
 ?>
 
 <html>
 <head>
 	<title>Tootfinder</title>
+	<base href="https://tootfinder.ch/">
 	<link rel='stylesheet' href='./site/files/style20230218.css'>
 	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 </head>
@@ -78,10 +83,10 @@ if ($name && substr($name,0,9)=='rest/api/') { include 'inc/rest.php'; exit; }
 	        $list[$row['link']]=1;
 
 	        if ($row['found']<2 && !$similar) { echo '<div class="post">No exact results. Similar results found.</div>'; $similar = true;}
-          preg_match('/@([a-zA-Z0-9_]+)@([a-zA-Z0-9_]+\.[a-zA-Z0-9_]+)/',$row['user'],$matches); 
+          preg_match('/@([a-zA-Z0-9_]+)@([a-zA-Z0-9-_]+\.[a-zA-Z0-9.-_]+)/',$row['user'],$matches); 
 	        $username = @$matches[1];
 	        $host = @$matches[2];
-	        $signature = '<span class="signature">'.$row['user'].'<br><a href="'.$row['link'].'" target="_blank">'.$row['pubdate'].'</a></span>';
+	        $signature = '<span class="signature">'.$row['user'].'<br><a href="'.$row['link'].'" target="_blank" rel="nofollow">'.$row['pubdate'].'</a></span>';
 	        $line = $row['description'];
 
 	        $line = handleHTMLHeader($line);
@@ -97,7 +102,9 @@ if ($name && substr($name,0,9)=='rest/api/') { include 'inc/rest.php'; exit; }
 
 	        $line = handleContentWarning($line);
 
-			$line = '<div class="post"><div class="postheader"><a href="https://'.$host.'/users/'.$username.'" target="_blank"><img src="'.$row['image'].'" class="avatar"> </a>'. $signature.'</div><div class="postbody">'.$line.'</div></div>';
+			$line = '<div class="post" id="'.$row['link'].'"><div class="postheader"><a href="https://'.$host.'/users/'.$username.'" target="_blank" rel="nofollow"><img src="'.$row['image'].'" class="avatar"> </a>'. $signature.'</div><div class="postbody">'.$line.'</div></div>';
+			
+			
 
 
 	        //print_r($row);
@@ -163,7 +170,7 @@ if ($name && substr($name,0,9)=='rest/api/') { include 'inc/rest.php'; exit; }
 $pq = '';
 		foreach(popularQueries() as $elem)
 		{
-			$pq .= '<a href="index.php?noindex=1&query='.urlencode($elem['query']).'">'.$elem['query'].'</a><br>';
+			$pq .= '<a href="search/noindex/'.urlencode($elem['query']).'">'.$elem['query'].'</a><br>';
 		}
 
 		echo '<div class="post"><b><p>Popular queries</b>
@@ -177,15 +184,12 @@ $pq = '';
 
 echo '<div class="post"><p><b>Contact</b>
 		<p><a rel="me" href="https://tooting.ch/@buercher" target="_blank">@buercher@tooting.ch</a>
-	<p>v'.$tfVersion.' 2023-02-20<p>
+	<p>v'.$tfVersion.' 2023-02-26<p>
 	';
 	echo getinfo();
 	echo "<p>Index ".indexStatus();
 	echo "</div>";
-	echo '<div class="post"><p><b>Notice: OAuth Users from before February 12th</b></p>
-	<p>OAuth is no longer used for opt-in. Your usernames are now inactive. If you want to have them reactivated, add the magic word in you profile.
-
-	</div>';
+	
 
 	}
 

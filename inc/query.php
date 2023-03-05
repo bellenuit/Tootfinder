@@ -4,7 +4,7 @@
 /**
  *	query functions
  * 
- *  @version 1.6 2023-02-26
+ *  @version 1.7 2023-03-05
  */	
 	
 if (!defined('CRAWLER')) die('invalid acces');
@@ -16,6 +16,24 @@ function query($q, $doindex = true, $newposts = false, $allposts = false)
 {
 	$db = init(true);
 	$query0 = $q;
+	
+	$hastagquery = '';
+	if (preg_match('/^#[a-zA-Z0-9:]+$/',$q)) $hastagquery = " AND description LIKE '%/tags/".substr($q,1)."%'";
+	
+	$q = preg_replace('/[!-)\+-,\.\/:-@[-`\{-~]|\b-\b|\*\b/',' ',$q);
+	
+	// [!-) ascii 33-41
+	// \. ascii 46
+	// \/ ascii 47
+	// :-@ ascii 58-64
+	// [-` ascii 91-96
+	// \{-~ ascii 123-126
+	// -\b- dash a boundary (not starting word)
+	// \*\b star befor a boundary (not ending a word
+	// are replaced with spaces 
+	
+	// echo '<p>'.$q;
+	
 	$q = encodeSpacelessLanguage($q);
 	$q = SQLite3::escapeString($q);
 	$planb = false;
@@ -24,10 +42,10 @@ function query($q, $doindex = true, $newposts = false, $allposts = false)
  
 	
 	$sql = "SELECT '2' as found, score(offsets(posts), description, followers, pubdate, indexdate) as score, link, user, description, pubdate, image, media, followers, indexdate FROM posts 
-  WHERE posts MATCH '$q'
+  WHERE posts MATCH '$q' $hastagquery
   $order
   $limit ";
-  
+  	
 	debugLog('<p>'.$sql);
 	$list = $db->query($sql);
 	
@@ -39,9 +57,9 @@ function query($q, $doindex = true, $newposts = false, $allposts = false)
 		$q = SQLite3::escapeString($q);
 		
 		$sql = "SELECT '1' as found, score(offsets(posts), description, followers, pubdate, indexdate) as score, link, user, description, pubdate, image, media, followers, indexdate FROM posts 
-  WHERE posts MATCH '$q'
+  WHERE posts MATCH '$q' 
   $order
-  $limit ";
+  limit 10 ";
   		debugLog('<p>Starred: '.$sql);
 		
 		$list = $db->query($sql);
@@ -54,7 +72,7 @@ function query($q, $doindex = true, $newposts = false, $allposts = false)
 			$sql = "SELECT '0' as found, score(offsets(posts), description, followers, pubdate, indexdate) as score, link, user, description, pubdate, image, media, followers, indexdate FROM posts 
 			  WHERE soundex MATCH '$q'
 	  $order
-	  $limit ";
+	  limit 10 ";
 	  		debugLog('<p>Soundex: '.$sql);
 	  
 	  		$list = $db->query($sql); 
@@ -76,7 +94,7 @@ function query($q, $doindex = true, $newposts = false, $allposts = false)
 		$d['description-jp'] = $d['description'];
 		$d['description'] = decodeSpacelessLanguage($d['description']);	
 		$d['media'] = decodeSpacelessLanguage($d['media']);	
-			
+					
 		$result[] = $d;
 	}
 	$db->close();

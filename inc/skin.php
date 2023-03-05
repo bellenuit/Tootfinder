@@ -5,7 +5,7 @@ if (!defined('CRAWLER')) die('invalid acces');
 /**
  *	functions to process the post for display
  * 
- *  @version 1.6 2023-02-26
+ *  @version 1.7 2023-03-05
  */
 
 function handleContentWarning($s)
@@ -74,8 +74,8 @@ function handleMentions($s)
 
 function handleHashtags($s)
 {
-     // link hashtags to tootfinder 
-     return preg_replace('/(<a href=")https:\/\/.*?\/tags\/(.*?)" class="mention hashtag" rel="tag">/','$1index.php?query=%23$2">',$s);  
+     // link hashtags to tootfinder // hashtag can be cut by ellipsis
+     return preg_replace('/(<a href=")https:\/\/.*?\/tags\/(.*?)" class="mention hash.*?" rel="tag">.*?<\/a>/','$1tags/$2">#$2</a>',$s);  
 }
 
 function sqltable($db,$sql)
@@ -184,4 +184,6 @@ function expandableSnippet($s)
      return "<p><tt><div><a onclick='$script'>+</a><div style='display:none'><p>".htmlspecialchars($s)."</a></div></div></tt>";
      
 }
+
+
 

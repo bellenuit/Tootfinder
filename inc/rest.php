@@ -2,7 +2,7 @@
 /**
  *	REST API
  * 
- *  @version 1.6 2023-02-26
+ *  @version 1.7 2023-03-05
  */	
  
  
@@ -11,9 +11,7 @@ if (!defined('CRAWLER')) die('invalid acces');
 header('Content-Type: application/json; charset=utf-8'); 
 $result = array();
 
-$linkpath = $tfRoot.'index.php?name=';
-
-
+$linkpath = $tfRoot.'/index.php?name=';
 
 // open api default
 $list = array();
@@ -24,19 +22,30 @@ $list[] = array(
 	'description' => 'fulltext search',
 	'parameters' => 'query',
 	'parameterdescriptions' => 'search term (FTS3 syntax)',
-	'parameterexamples' => 'san AND francisco',
+	'parameterexamples' => 'san OR francisco',
 	'sql' => 'query') ;
+	
+$list[] = array(
+	'id' => '/activitypub/search/{query}',
+	'operationid' => '/activitypub/search.+',
+	'root' => '/activitypub/search',
+	'description' => 'fulltext search collection',
+	'parameters' => 'query',
+	'parameterdescriptions' => 'search term (FTS3 syntax)',
+	'parameterexamples' => 'san OR francisco',
+	'sql' => 'query') ;
+
+$shortname = substr($name,strlen('rest/api/'));
 
 foreach($list as $v)
 {
 	$k = $v['id'];
 	$k2 = str_replace('/','\/',@$v['operationid']);
-	$r2 = str_replace('/','\/',@$v['root']);
-	if (preg_match('/'.$k2.'/',$name)) 
+	if (preg_match('/rest\/api'.$k2.'/',$name)) 
 	{
 		if ($v['sql'] == 'query')
 		{
-			$q = substr($name,strlen('rest/api'.$r2));
+			$q = substr($shortname,strlen($v['root']));
 			if ($q)
 			foreach(query($q, false, false) as $row)
 			{
@@ -106,6 +115,19 @@ foreach($list as $v)
 			}
 			
 		}
+		
+		if ($v['id'] == '/activitypub/search/{query}')
+		{
+			$result = array(
+				'@context' =>'https://www.w3.org/ns/activitystreams',
+				'summary' => $v['description'].' for '.$q,
+				'type' => 'Collection',
+				'totalItems' => count($result),
+				'items' => $result
+			);
+			
+		}
+		
 		
 		echo json_encode($result); exit;
 	}

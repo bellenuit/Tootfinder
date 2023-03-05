@@ -3,7 +3,7 @@
 /**
  *	crawl and index functions
  * 
- *  @version 1.6 2023-02-26
+ *  @version 1.7 2023-03-05
  */
 	
 if (!defined('CRAWLER')) die('invalid acces');
@@ -130,6 +130,7 @@ function index($usr = '')
 	$okfiles = array();
 	
 	$labels = array();
+	$deletelist = array();
 	$verbose = '';
 	$pc = 0;
 	$uc = 0;
@@ -150,7 +151,7 @@ function index($usr = '')
 		}
 		if (!$format) continue;
 		
-		preg_match('/@([a-zA-Z0-9_]+)@([a-zA-Z0-9_-]+\.[a-zA-Z0-9.-]+)/',$label,$matches); // @user@example.com // can have two . in domain!
+		preg_match('/@([a-zA-Z0-9_]+)@([a-zA-Z0-9_-]+\.[a-zA-Z0-9.-_]+)/',$label,$matches); // @user@example.com // can have two . in domain!
 		if (count($matches)<3) continue;
 		$host = $matches[2];
 		$user = $matches[1];
@@ -228,6 +229,7 @@ function index($usr = '')
 		if ($format == 'json') $feed = readJSONfeed($s,$label, $host, $user,$file);
 		else $feed = readRSSFeed($s,$file);
 			
+		
 				
 		$generalfound = 0;
 		$oldposts = 0;
@@ -237,14 +239,70 @@ function index($usr = '')
 		$maxpubdate = 0;
 		$postcount = 0;
 		
+		// we get a list of current posts. if some more recent than the oldest post may have disappeared, we can discard them
+		// we cannot take link as orderes, because some instances do use md5 as id.
+		// so we use pubdate and assume that second is unique for users that post
+		
+		$db2 = init(true);
+		$sql = "SELECT pubdate, link FROM posts where user = '$label';";
+		$res = $db2->query($sql);
+		$currentlinks = array();
+		while ($d = $res->fetchArray(SQLITE3_ASSOC)) 
+		{
+			$currentlinks[$d['link']] = $d['pubdate'];
+		}
+		$db2->close();
+		
+		// we get the oldest post
+		
+		$oldestid = false;
+		if (count($feed))
+		{
+			$post = end($feed);
+			$oldestid = $post['pubdate'];
+			
+			foreach($currentlinks as $k=>$v)
+			{
+				if ($v < $oldestid) unset($currentlinks[$k]);
+			}
+		}
+		else
+		{
+			// we ignore
+			$currentlinks = array();
+		}
 
 		foreach($feed as $post)
 		{
 			$postcount++;
+			$found = false;
 			
+			$link = SQLite3::escapeString($post['link']);
+			$edited = @$post['edited_at'];
+			$minpubdate = min($minpubdate,$post['pd']);
+			$maxpubdate = max($maxpubdate,$post['pd']);
+			$pubdate = $post['pubdate'];
+			$indexdate = date('Y-m-d H:i:s');
+			
+			// if the post exists and is not edited, we go no further
+			if (array_key_exists($link,$currentlinks))
+			{
+				// $verbose .= '<p>Found post <a href="'.$link.'" target="_blank">'.$link.'</a>';
+				if ($edited)
+				{
+					$link = $currentlinks[$pubdate];
+					$journal []= "DELETE FROM posts WHERE link = '$link' ;";
+				}
+				else
+				{
+					$found = true;
+					$oldposts++;
+				}				
+			}
+			unset($currentlinks[$link]);
 			
 			$avatar = SQLite3::escapeString($post['avatar']);
-			$link = SQLite3::escapeString($post['link']);
+			
 			
 			$description = handleMentions($post['description']);	
 			
@@ -260,23 +318,7 @@ function index($usr = '')
 			$media = SQLite3::escapeString($media);
 			$description = SQLite3::escapeString($description);	
 			
-			$minpubdate = min($minpubdate,$post['pd']);
-			$maxpubdate = max($maxpubdate,$post['pd']);
-			$pubdate = $post['pubdate'];
-			$indexdate = date('Y-m-d H:i:s');
 			
-
-			$db2 = init(true);
-			$sql = "SELECT link FROM posts WHERE link = '".$link."'";
-			$result = @$db2->query($sql);
-			
-			$found = false;
-			
-			if ($result && $d = $result->fetchArray(SQLITE3_ASSOC)) 
-			{
-				$found = true;
-				$oldposts++;
-			}
 
 			$db2->close();
 			$sql = "";			
@@ -288,6 +330,25 @@ function index($usr = '')
 				$pc++;
 			}
 			
+		}
+		
+		// remove posts that have been deleted.
+		foreach($currentlinks as $k=>$v)
+		{
+			$localpath = $tfRoot.'/site/deleted/'.bin2hex($k);
+			$deletelist[$k] = $localpath;
+			
+			/*
+			// delete candidates
+			// we check the status, if it returns error, we will delete it -- expensive !
+			$s = getRemoteString($k);	
+			
+			if (strlen($s)<2000) // probably error
+			{
+				$journal []= "DELETE FROM posts WHERE link = '$k' ;";
+				$verbose .= '<p>Deleted post <a href="'.$k.'" target="_blank">'.$k.' '.$v.'</a> '.$oldestid;
+			}
+			*/
 		}	
 				
 		// we calculated when the next post is likely to happen, but we wait at most 1 day
@@ -310,12 +371,27 @@ function index($usr = '')
 	
 	$limit = date('Y-m-d',strtotime('-14 day', time()));
 	if (rand(0,100)>98) $journal []= "DELETE FROM posts WHERE pubdate < '".$limit."'; VACUUM ; "; 
+	
+	// remove all deleted files
+	$files = glob($tfRoot.'/site/deleted/*');
+	foreach($files as $file)
+	{
+		
+		$link = hex2bin(basename($file));
+		if (filesize($file)<2000)
+		{
+			$journal []= "DELETE FROM posts WHERE link = '$link' ;";
+			$verbose .= '<p>Deleted post <a href="'.$link.'" target="_blank">'.$link.'</a>';
+		}
+		unlink($file);
+	}
+	
 		
 	$q = join(PHP_EOL,$journal);		
 	$db = init();
 	if (!$db->exec($q))
 	{
-		echo '<p>index error '.$db->lastErrorMsg().' '.$q;
+		$verbose .= '<p>index error '.$db->lastErrorMsg().' '.$q;
 		return array();
 	}
 	
@@ -329,6 +405,11 @@ function index($usr = '')
 	$verbose .=  '<p>Index feeds: '.count($files);
 	$verbose .=  ' Unchanged: '.$uc;
 	$verbose .=  ' Posts: '.$pc;
+	
+	
+	
+	
+	getRemoteFiles($deletelist);
 	
 	return $verbose;
 	
@@ -370,7 +451,9 @@ function readJSONFeed($s, $label, $host, $user, $file)
 		$list['avatar'] = @$post['account']['avatar'];
 		$list['id'] = @$post['id'];
 		$list['link'] = 'https://'.$host.'/@'.$user.'/'.$list['id'] ;
-		$list['description'] = trim(@$post['content']);
+		$description = trim(@$post['content']);
+		if (strlen($description)>500) $description = substr($description,0,499).'…';
+		$list['description'] = $description;
 		
 		debugLog(' '.@$post['account']['id']);
 		debugLog(' <tt>'.substr(htmlspecialchars($list['description']),0,140).'</tt>');
@@ -398,6 +481,8 @@ function readJSONFeed($s, $label, $host, $user, $file)
 					 if (!$thumb) $thumb = $orig;
 					 if ($thumb)
 					 {
+						 $mediadescription = @$m['description'];
+						 if (strlen($mediadescription)>500) $mediadescription = substr($mediadescription,0,499).'…';
 						 $mediadescription = str_replace('|','&#124;',@$m['description']);
 						 $list['medias'][] = $thumb.'|'.$orig.'|'.$mediadescription;
 					 }
@@ -416,9 +501,14 @@ function readJSONFeed($s, $label, $host, $user, $file)
 			{
 				$cardurl = @$card['url'];
 				$cardtitle = str_replace('|','&#124;',@$card['title']);
+				$carddescription = @$card['description'];
+				if (strlen($carddescription)>500) $carddescription = substr($carddescription,0,499).'…';
 				$carddescription = str_replace('|','&#124;',@$card['description']);
 				$cardurl = @$card['url'];
 				$cardimage = @$card['image'];
+				// do not index system cache images, they are probably gone 
+				if (stristr($cardimage,'/system/cache/')) $cardimage = '';
+				
 				$list['medias'][] = $cardimage.'|'.$cardurl.'|'.$cardtitle.'|'.$carddescription;				
 			}
 		}

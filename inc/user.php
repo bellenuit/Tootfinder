@@ -3,8 +3,8 @@
 /**
  *	functions related to users
  * 
- * 
- *  @version 1.5 2023-02-26
+ *
+ *  @version 1.7 2023-03-05
  */
 	
 function addUser($label)
@@ -57,7 +57,7 @@ function addUser($label)
 		
 	}	
 
-	// we have a valid user, let's check if the profile is valid
+	// we have a user, let's check if the profile is valid
 	
 	$err = crawl(array($dict));
 
@@ -125,7 +125,7 @@ function validUser($label, $refresh = false)
 		
 		//echo '*'; // print_r($j);
 		
-		if (isset($j['error']) || isset($j['errors'])) 
+		if (strlen($s) < 300 || isset($j['error']) || isset($j['errors'])) 
 		{
 				
 				$localpath = $tfRoot.'/site/profiles/'.$label.'.html';

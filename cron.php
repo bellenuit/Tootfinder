@@ -4,7 +4,7 @@
  *	Indexes the crawler. This is called from a cron tab 
  *  In production, htaccess refuses external access
  * 
- *  @version 1.6 2023-02-26
+ *  @version 1.7 2023-03-05
  */
   
 
@@ -22,7 +22,7 @@
 			
 	$userlabel = trim(preg_replace('/\t+/', '',filter_input(INPUT_GET, 'userlabel', FILTER_SANITIZE_STRING)));
 
-	$echo = '<form method = "get" action ="cron3.php"> 
+	$echo = '<form method = "get" action ="cron.php"> 
 		<input type = "text" name = "userlabel" placeholder="" value = "'.$userlabel.'"> <input type = "submit" name ="submitjoin" value="Join Debug"> 
 		<input type = "submit" name ="submitquery" value="Query"> 
 		<input type = "submit" name ="submitdelete" value="Delete user and posts" style="color:red"></form>';
