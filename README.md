@@ -39,6 +39,7 @@ Folder structure
 - site/
 	- bak/ last copy of the feed
 	- configuration.php
+	- delete/ delete candidates
 	- feeds/ temporary copies of remote feeds
 	- files/ website files (css and images)
 	- profiles/ temporary copies of remote profile pages
