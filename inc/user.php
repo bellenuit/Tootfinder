@@ -66,7 +66,7 @@ function addUser($label)
 		return '<p><span class="error">I cannot find the profile page <b><a href="'.substr($err,10).'" target="_blank">'.substr($err,10).'</b></span>';
 
 	
-	if (!$magic = validUser($label, true)) return '<p><span class="error">Your fediverse profile is missing the magic word. Please proceed to step 1 first and then join again.</span>';
+	if (!$magic = validUser($label, $user, $host, true)) return '<p><span class="error">Your fediverse profile is missing the magic word. Please proceed to step 1 first and then join again.</span>';
 	
 	
 	debugLog('<p>Valid user. Going to index.');
@@ -102,16 +102,10 @@ function addUser($label)
 	
 }
 	
-function validUser($label, $refresh = false)
+function validUser($label, $user, $host, $refresh = false)
 {
 	global $tfRoot;
 	debugLog('<p>validUser '.$label);
-	
-	
-	preg_match('/@([a-zA-Z0-9_]+)@([a-zA-Z0-9_-]+\.[a-zA-Z0-9.-]+)/',$label,$matches); // @user@example.com // can have two . in domain!
-	if (count($matches)<3) return false; 
-	$host = $matches[2];
-	$user = $matches[1];
 
 	$localpath = $tfRoot.'/site/profiles/'.$label.'.json';
 	
