@@ -5,29 +5,11 @@ if (!defined('CRAWLER')) die('invalid acces');
 /**
  *	functions to process the post for display
  * 
- *  @version 1.7 2023-03-05
+ *  @version 1.8 2023-03-19
  */
 
 function handleContentWarning($s)
 {
-	// hide old content warnings  to be removed march 8th
-	$s = trim($s);
-	preg_match('#<strong>(.*)</strong>([\S\s]*?)(<[\S\s]*)#',$s,$matches); // content warning is multilanguage. 
-	
-	if ($matches)
-	{
-		$m = trim($matches[3]);
-		if (substr($m,0,4)=='<br>') $m = substr($m,4); 
-		$m = str_replace('<hr>','',$m);
-		$m = str_replace('<p></p>','',$m);
-		$line = '<div class="contentwarninglabel">'.$matches[1].' '.$matches[2].'</div><p>'.$m;
-		$line = '<div class="contentwarning" onclick="this.style.visibility=\'visible\'">'.$line.'</div>';
-		$line = str_replace('<p></p>','',$line);
-		return $line;
-
-	}
-	
-	// hide new content warnings
 	
 	preg_match('#<contentwarning>(.*?)</contentwarning>([\S\s]*)#',$s,$matches); // content warning is multilanguage. 
 	
@@ -37,9 +19,10 @@ function handleContentWarning($s)
 		if (substr($m,0,4)=='<br>') $m = substr($m,4); 
 		$m = str_replace('<hr>','',$m);
 		$m = str_replace('<p></p>','',$m);
+		if ($matches[1]) $matches[1] = ': '.$matches[1];
 		$line = '
 <div class="contentwarning" onclick="this.style.visibility=\'visible\'">
-	<div class="contentwarninglabel">Content warning: '.$matches[1].'</div>
+	<div class="contentwarninglabel">Content warning'.$matches[1].'</div>
 '.$m.'
 </div>';
 		return $line;
@@ -80,7 +63,9 @@ function handleHashtags($s)
 
 function sqltable($db,$sql)
 {
-	$list = $db->query($sql);
+	$db->enableExceptions(true);
+	try { $list = $db->query($sql); } catch (Exception $e) { return 'Caught exception: ' . $e->getMessage().' '.$sql; }
+	
 	$lines = [];
 	while ($d = $list->fetchArray(SQLITE3_ASSOC)) 
 	{
@@ -118,10 +103,10 @@ function handleMedia($media)
 			// remove single quotes in card description
 			$carddescription = preg_replace("/^'/",'',$carddescription);
 			$carddescription = preg_replace("/'$/",'',$carddescription);
-			
+			if (strlen($carddescription)>500) $carddescription = substr($carddescription,0,499).'…';	
 			if ($thumb || $carddescription)
 			{
-			    if ($thumb) $thumb = '<img src="'.$thumb.'" class="card">';
+			    if ($thumb) $thumb = '<img src="'.$thumb.'" onerror="this.style.display=\'none\'" class="card">';
 				$result .= '<div class="card"><a href="'.$orig.'" target="_blank">'.$thumb.'<p class="card"><b>'.$cardtitle.'</b><br>'.$carddescription.'</a></div>';
 			
 			}
@@ -132,7 +117,7 @@ function handleMedia($media)
 			if (count($fields)>1) $orig = $fields[1]; else $orig = $thumb;
 			if (count($fields)>2) $alt =  'alt="'.str_replace('"','&quot;',$fields[2]).'"'; else $alt = '';
 			
-			$result .= '<div class="media"><a href="'.$orig.'" target="_blank"><img src="'.$thumb.'" class="media" '.$alt.' ></a></div>';
+			$result .= '<div class="media"><a href="'.$orig.'" target="_blank"><img src="'.$thumb.'" onerror="this.style.display=\'none\'"  class="media" '.$alt.' ></a></div>';
 		}
 	}
 	
@@ -180,8 +165,8 @@ function decodeSpacelessLanguage($s)
 function expandableSnippet($s)
 {
 
-     $script = 'ch = this.parentNode.children; for (var i = 0; i < ch.length; i++) { ch[i].style.display = "block"; }';     
-     return "<p><tt><div><a onclick='$script'>+</a><div style='display:none'><p>".htmlspecialchars($s)."</a></div></div></tt>";
+     $script = 'ch = this.parentNode.children; for (var i = 1; i < ch.length; i++) { if (ch[i].style.display == "block")  ch[i].style.display = "none"; else ch[i].style.display = "block"; }';     
+     return "<p><tt><div><a onclick='$script'>(+)</a><div style='display:none'><p>".htmlspecialchars($s)."</a></div></div></tt>";
      
 }
 

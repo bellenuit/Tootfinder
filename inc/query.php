@@ -4,18 +4,18 @@
 /**
  *	query functions
  * 
- *  @version 1.7 2023-03-05
+ *  @version 1.8 2023-03-17
  */	
 	
 if (!defined('CRAWLER')) die('invalid acces');
 
 
-
-
 function query($q, $doindex = true, $newposts = false, $allposts = false)
 {
-	$db = init(true);
+	
 	$query0 = $q;
+	
+	if ($q == ':now') return trendingPosts();
 	
 	$hastagquery = '';
 	if (preg_match('/^#[a-zA-Z0-9:]+$/',$q)) $hastagquery = " AND description LIKE '%/tags/".substr($q,1)."%'";
@@ -47,73 +47,107 @@ function query($q, $doindex = true, $newposts = false, $allposts = false)
   $limit ";
   	
 	debugLog('<p>'.$sql);
-	$list = $db->query($sql);
 	
-	if (NULL == $list->fetchArray(SQLITE3_ASSOC)) 
+	$db = init(true);
+	if ($db)
 	{
-		$planb = true;
-		
-		$q = queryStar($query0);
-		$q = SQLite3::escapeString($q);
-		
-		$sql = "SELECT '1' as found, score(offsets(posts), description, followers, pubdate, indexdate) as score, link, user, description, pubdate, image, media, followers, indexdate FROM posts 
-  WHERE posts MATCH '$q' 
-  $order
-  limit 10 ";
-  		debugLog('<p>Starred: '.$sql);
-		
 		$list = $db->query($sql);
 		
 		if (NULL == $list->fetchArray(SQLITE3_ASSOC)) 
 		{
-		
-			$q = QuerySoundex($query0);
+			$planb = true;
 			
-			$sql = "SELECT '0' as found, score(offsets(posts), description, followers, pubdate, indexdate) as score, link, user, description, pubdate, image, media, followers, indexdate FROM posts 
-			  WHERE soundex MATCH '$q'
+			$q = queryStar($query0);
+			$q = SQLite3::escapeString($q);
+			
+			$sql = "SELECT '1' as found, score(offsets(posts), description, followers, pubdate, indexdate) as score, link, user, description, pubdate, image, media, followers, indexdate FROM posts 
+	  WHERE posts MATCH '$q' 
 	  $order
 	  limit 10 ";
-	  		debugLog('<p>Soundex: '.$sql);
-	  
-	  		$list = $db->query($sql); 
-  		
-  		}
-	}
-	
-	$list->reset();
-
-	$rc = 0;
-	$result = array();
-	
-	while ($d = $list->fetchArray(SQLITE3_ASSOC)) 
-	{
-		if (!validUser($d['user'])) continue;
-
-		$rc++;
+	  		debugLog('<p>Starred: '.$sql);
+			
+			$list = $db->query($sql);
+			
+			if (NULL == $list->fetchArray(SQLITE3_ASSOC)) 
+			{
+			
+				$q = QuerySoundex($query0);
+				
+				$sql = "SELECT '0' as found, score(offsets(posts), description, followers, pubdate, indexdate) as score, link, user, description, pubdate, image, media, followers, indexdate FROM posts 
+				  WHERE soundex MATCH '$q'
+		  $order
+		  limit 10 ";
+		  		debugLog('<p>Soundex: '.$sql);
+		  
+		  		$list = $db->query($sql); 
+	  		
+	  		}
+		}
 		
-		$d['description-jp'] = $d['description'];
-		$d['description'] = decodeSpacelessLanguage($d['description']);	
-		$d['media'] = decodeSpacelessLanguage($d['media']);	
-					
-		$result[] = $d;
+		$list->reset();
+	
+		$rc = 0;
+		$result = array();
+		$validusers = array();
+		
+		while ($d = $list->fetchArray(SQLITE3_ASSOC)) 
+		{
+			$profile = getProfile($d['user']);
+			if (!isset($validusers[$d['user']]) && !validUser($profile)) continue;  // WE MUST GET VALIDUSER BACK HERE HOTFIX
+			$validusers[$d['user']] = 1;
+	
+			$rc++;
+			
+			$d['description-jp'] = $d['description'];
+			$d['description'] = decodeSpacelessLanguage($d['description']);	
+			$d['media'] = decodeSpacelessLanguage($d['media']);	
+						
+			$result[] = $d;
+		}
+		$db->close();
+		
+		// downvote following posts the same user
+		
+		if (!$newposts)
+		{
+			$users = array();
+			foreach($result as $k=>$x)
+			{
+				if (isset($users[$x['user']]))
+				{
+					$users[$x['user']]++;
+					$x['score'] /= $users[$x['user']];
+					$result[$k] = $x;
+				}
+				else
+				{
+					$users[$x['user']] = 1;
+				}
+			}
+			
+			uasort($result, function($x,$y) { return $y['score'] - $x['score']; });
+		}
+		
 	}
-	$db->close();
 	
 	
 	
 	
 	if (!$planb && $doindex && ! stristr($query0,'@'))
 	{
-	    $db = initQueries();
+	    
 		$date = date("Y-m-d H:i"); // remove seconds to discourage clickbait
 		$q = SQLite3::escapeString($query0);
 		$sql2 = "INSERT INTO queries (query, date, results) VALUES ('".$q."','".$date."',".$rc.");"; 
-		if (!$db->exec($sql2)) echo '<p>index error '.$db->lastErrorMsg(); 
-		
-		$sql2 = "DELETE FROM queries WHERE date < '".$limit."'; VACUUM ;"; 
-		if (rand(0,1000)>998) $db->exec($sql2); 
-
-		$db->close();
+		$db = initQueries();
+		if ($db)
+		{
+			if (!$db->exec($sql2)) echo '<p>index error '.$db->lastErrorMsg(); 
+			$datelimit = date('Y-m-d',strtotime('-14 day', time()));
+			$sql2 = "DELETE FROM queries WHERE date < '".$datelimit."' ;"; 
+			if (rand(0,1000)>998) $db->exec($sql2); 
+			$db->close();
+		}
 	}
 	
 	return $result;	

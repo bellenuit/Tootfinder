@@ -4,7 +4,7 @@
 /**
  *	general purpose functions
  * 
- *  @version 1.5 2023-02-25
+ *  @version 1.8 2023-03-18
  */
 	
 if (!defined('CRAWLER')) die('invalid acces');
@@ -43,7 +43,7 @@ function getRemoteFiles($jobs)
 }
 
 
-function getRemoteString($url)
+function getRemoteString($url,$v = '')
 {
        	$c = curl_init();
         curl_setopt($c, CURLOPT_RETURNTRANSFER, 1);
@@ -51,6 +51,8 @@ function getRemoteString($url)
         curl_setopt($c, CURLOPT_TIMEOUT,5);
         curl_setopt($c, CURLOPT_USERAGENT, 'Tootfinder/1.1 (+https://www.tootfinder.ch/index.php)');
         curl_setopt($c, CURLOPT_URL, $url);
+        curl_setopt($c, CURLOPT_FOLLOWLOCATION, true);
+        if (substr($v,-5)=='.json') curl_setopt($c, CURLOPT_HTTPHEADER, array('Accept: application/activity+json'));
         $contents = curl_exec($c);
         curl_close($c);
 		return $contents;
@@ -95,5 +97,23 @@ function debugLog($s)
 {
 	global $tfDebug;
 	$tfDebug .= $s;
+}
+
+function wordList($s)
+{
+	$p = str_replace('<p'," <p",$s);
+	$p = str_replace('<br'," <br",$p);	  	 
+	$p = preg_replace('/<.*?>/','',$p); 
+	$p = preg_replace('#https?://\S*#','',$p);	  	 
+	$p = preg_replace('/[!-)\+-,\.\/:-@[-`\{-~]|\*|#|’|-/',' ',$p);
+	
+	// [!-) ascii 33-41
+	// \. ascii 46
+	// \/ ascii 47
+	// :-@ ascii 58-64
+	// [-` ascii 91-96
+	// \{-~ ascii 123-126
+	
+	return array_unique(explode(' ',$p));
 }
 

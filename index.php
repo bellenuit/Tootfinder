@@ -9,7 +9,7 @@
  *
  *  matti@belle-nuit.com
  *  @buercher@tooting.ch
- *  @version 1.7 2023-03-05
+ *  @version 1.8 2023-03-19
  */
 
 @define('CRAWLER',true);
@@ -70,12 +70,15 @@ elseif ($name && substr($name,0,5)=='tags/') { $query = '#'.substr($name,5);  } 
 	if ($query)
 	{
 
-        $found = false;
+        $found = 0;
         $similar = false;
         $newposts = false; if (isset($_GET['submitnew'])) $newposts = true;
         $allpost = false;
 
         $list = array();
+        
+        $descriptions = array();
+        $echo = array();
 
         foreach(query($query, $doindex, $newposts, $allpost) as $row)
         {
@@ -92,8 +95,6 @@ elseif ($name && substr($name,0,5)=='tags/') { $query = '#'.substr($name,5);  } 
 	        $line = handleHTMLHeader($line);
 	        $line = handleMentions($line);
 	        $line = handleHashtags($line);
-	        // touch devices hack
-	        // $line = '<a href="#link" class="link">'.$line.'</a>';
 	        // fix paragraphs
 	        $line = preg_replace("/<\/p>.*?<p>/",'<br>',$line);
 
@@ -104,14 +105,16 @@ elseif ($name && substr($name,0,5)=='tags/') { $query = '#'.substr($name,5);  } 
 
 			$line = '<div class="post" id="'.$row['link'].'"><div class="postheader"><a href="https://'.$host.'/users/'.$username.'" target="_blank" rel="nofollow"><img src="'.$row['image'].'" class="avatar"> </a>'. $signature.'</div><div class="postbody">'.$line.'</div></div>';
 			
-			
+	        $echo[] = $line.PHP_EOL;
 
-
-	        //print_r($row);
-	        echo $line.PHP_EOL;
-
-	        $found = true;
+	        $found++;
+	        
+	        
+	        $descriptions[$row['description']] = 1;
+	        
         }
+               
+        echo join('',$echo);
 
 		if (!$found) echo '<div class="post">No results.</div>';
 
@@ -167,6 +170,10 @@ elseif ($name && substr($name,0,5)=='tags/') { $query = '#'.substr($name,5);  } 
 	<p>This is pure opt-in: If you are not interested, just do not join the index. If you quit the index, your posts will be removed from the index after 14 days.</p>
 <p><a href="privacy.php">Privacy statement</a></div>';
 
+	 echo '<div class="post"><b><p>Trending words</b><p>'.trendingWords().'
+	 <p><a href="search/%3Anow">Trending posts</a></div>';
+
+
 $pq = '';
 		foreach(popularQueries() as $elem)
 		{
@@ -184,11 +191,12 @@ $pq = '';
 
 echo '<div class="post"><p><b>Contact</b>
 		<p><a rel="me" href="https://tooting.ch/@buercher" target="_blank">@buercher@tooting.ch</a>
-	<p>v'.$tfVersion.' 2023-02-26<p>
+	<p>v'.$tfVersion.' 2023-03-19<p>
 	';
 	echo getinfo();
 	echo "<p>Index ".indexStatus();
 	echo "</div>";
+	
 	
 
 	}
