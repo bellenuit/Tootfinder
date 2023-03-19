@@ -19,6 +19,8 @@ Website: https://tootfinder.ch
 
 Wiki: https://tootfinder.ch/wiki/index.php
 
+REST API: https://www.tootfinder.ch/rest/api/
+
 Current issues: https://tootfinder.ch/wiki/index.php?name=issues
 
 Privacy statement: https://tootfinder.ch/privacy.php
@@ -29,20 +31,27 @@ Folder structure
 - cron.php entry point for crontab (disabled from htaccess)
 - index.php main entry point of webserver
 - inc/
-	- crawl.php get remote files and index them
+	- crawl.php get remote postings files to local
 	- db.php create the database
+	- index.php analyze posting files
 	- info.php get statistics
 	- query.php search the posts
+	- read.php read posting files format 
+	- rest.php handle REST API
 	- skin.php format the posts for output
 	- user.php handle users
 	- utilities.php the rest
+- privacy.php privacy statement
 - site/
 	- bak/ last copy of the feed
+	- cache/ cache of some indicators of website
 	- configuration.php
 	- delete/ delete candidates
 	- feeds/ temporary copies of remote feeds
 	- files/ website files (css and images)
+	- hostmeta/ cache of host-meta files
 	- profiles/ temporary copies of remote profile pages
 	- rejected/ feeds the server could not handle
+	- webfinger/ cache of webfinger files
 
 Note that there are .htaccess files to limit remote access of most of the files
