@@ -85,10 +85,10 @@ function validUser($profile)
 function randomUsers()
 {
 	
-	$q = "SELECT user, host, label, id, priority FROM users WHERE priority > 0 ORDER BY priority LIMIT 25;";
+	$q = "SELECT user, host, label, id, priority FROM users WHERE priority > 0 ORDER BY priority LIMIT 50;";
 	
 	if (rand(0,100)> 90) 
-		$q = "SELECT user, host, label, id, priority FROM users ORDER BY RANDOM() DESC LIMIT 25;";
+		$q = "SELECT user, host, label, id, priority FROM users ORDER BY RANDOM() DESC LIMIT 50;";
 	
 	$db = init(true);
 	if ($db)

@@ -5,10 +5,10 @@
  *  reads the files in the feeds folder and indexes them
  *  index check if the file has changes (comparing with bak), if the user is valid
  *  if valid, it chooses a function to read and then adds the posts to the database
- *  if not valid, it checks if the user still has posts, if not the user is deleted (14 days)
+ *  if not valid, it checks if the user still has posts, if not the user is deleted (3 months)
  *  files are added and moved to the bak or the reject folder
  * 
- *  @version 1.9 2023-03-17
+ *  @version 2.0 2023-04-23
  */
 	
 function index($usr = '')
@@ -217,7 +217,7 @@ function index($usr = '')
 			$minpubdate = min($minpubdate,$post['pd']);
 			$maxpubdate = max($maxpubdate,$post['pd']);
 			$pubdate = $post['pubdate'];
-			$datelimit = date('Y-m-d',strtotime('-14 day', time()));
+			$datelimit = date('Y-m-d',strtotime('-3 month', time()));
 			if ($pubdate < $datelimit) continue; // too old
 			$indexdate = date('Y-m-d H:i:s');
 			
@@ -233,6 +233,7 @@ function index($usr = '')
 				{
 					$found = true;
 					$oldposts++;
+					continue;
 				}				
 			}
 			unset($currentlinks[$link]);
@@ -293,7 +294,7 @@ function index($usr = '')
 	
 	$journal []= 'COMMIT; ';
 	
-	$limit = date('Y-m-d',strtotime('-14 day', time()));
+	$limit = date('Y-m-d',strtotime('-3 month', time()));
 	if (rand(0,100)>-98) $journal []= "DELETE FROM posts WHERE pubdate < '".$limit."'; "; 
 	
 	// remove all deleted files

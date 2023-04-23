@@ -10,7 +10,7 @@
  *  matti@belle-nuit.com
  *  @buercher@tooting.ch
  * 
- *  @version 1.4 2023-02-20
+ *  @version 2.0 2023-04-23
  */
 	
 ?>
@@ -45,7 +45,7 @@
 	
 	<div class="post">
 	<h4>Query data</h4>
-	<p>For each query that does give results, the query, the timestamp and the number of results are recorded in the database. The data is used for statistical purposes and deleted after 14 days.
+	<p>For each query that does give results, the query, the timestamp and the number of results are recorded in the database. The data is used for statistical purposes and deleted after 3 months.
 	</div>	
 
 	<div class="post">
@@ -80,7 +80,7 @@
 	
 	<div class="post">
 	<h4>Deleting data</h4>
-	<p>Post and query data will be deleted after 14 days. User data will be deleted when the user has revoked consent and there are no posts from the user.
+	<p>Post and query data will be deleted after 3 months. User data will be deleted when the user has revoked consent and there are no posts from the user.
 	</div>
 
 
@@ -105,7 +105,7 @@
 	<div class="post">
 	<h4>Contact</h4>
 	<p>If you have a privacy issue, you can contact <a rel="me" href="https://tooting.ch/@buercher" target="_blank">@buercher@tooting.ch</a> with a direct message.
-	<p>Version 1.4 2023-02-20
+	<p>Version 2.0 2023-04-23
 	</div>	
 	
 	

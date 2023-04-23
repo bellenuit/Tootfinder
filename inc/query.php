@@ -4,7 +4,7 @@
 /**
  *	query functions
  * 
- *  @version 1.8 2023-03-17
+ *  @version 2.0 2023-04-23
  */	
 	
 if (!defined('CRAWLER')) die('invalid acces');
@@ -15,7 +15,17 @@ function query($q, $doindex = true, $newposts = false, $allposts = false)
 	
 	$query0 = $q;
 	
-	if ($q == ':now') return trendingPosts();
+	if ($q == ':now')
+	{
+		 $result = trendingPosts();
+		 if ($newposts)
+		 {
+			 uasort($result, function($x,$y) { return $x['pubdate'] - $y['pubdate']; });
+		 }
+		 
+		 return $result;
+		 
+	}
 	
 	$hastagquery = '';
 	if (preg_match('/^#[a-zA-Z0-9:]+$/',$q)) $hastagquery = " AND description LIKE '%/tags/".substr($q,1)."%'";
@@ -41,12 +51,18 @@ function query($q, $doindex = true, $newposts = false, $allposts = false)
 	$limit = ' LIMIT 100 '; if ($allposts) $limit = '  ';
  
 	
-	$sql = "SELECT '2' as found, score(offsets(posts), description, followers, pubdate, indexdate) as score, link, user, description, pubdate, image, media, followers, indexdate FROM posts 
+	$sql = "SELECT '2' as found, score(offsets(posts), description, followers, pubdate) as score, link, user, description, pubdate, image, media, followers FROM posts 
   WHERE posts MATCH '$q' $hastagquery
   $order
   $limit ";
   	
 	debugLog('<p>'.$sql);
+	
+	// echo $sql;
+	
+	
+	
+	
 	
 	$db = init(true);
 	if ($db)
@@ -60,7 +76,7 @@ function query($q, $doindex = true, $newposts = false, $allposts = false)
 			$q = queryStar($query0);
 			$q = SQLite3::escapeString($q);
 			
-			$sql = "SELECT '1' as found, score(offsets(posts), description, followers, pubdate, indexdate) as score, link, user, description, pubdate, image, media, followers, indexdate FROM posts 
+			$sql = "SELECT '1' as found, score(offsets(posts), description, followers, pubdate) as score, link, user, description, pubdate, image, media, followers FROM posts 
 	  WHERE posts MATCH '$q' 
 	  $order
 	  limit 10 ";
@@ -73,7 +89,7 @@ function query($q, $doindex = true, $newposts = false, $allposts = false)
 			
 				$q = QuerySoundex($query0);
 				
-				$sql = "SELECT '0' as found, score(offsets(posts), description, followers, pubdate, indexdate) as score, link, user, description, pubdate, image, media, followers, indexdate FROM posts 
+				$sql = "SELECT '0' as found, score(offsets(posts), description, followers, pubdate) as score, link, user, description, pubdate, image, media, followers FROM posts 
 				  WHERE soundex MATCH '$q'
 		  $order
 		  limit 10 ";
@@ -110,6 +126,8 @@ function query($q, $doindex = true, $newposts = false, $allposts = false)
 		
 		if (!$newposts)
 		{
+			// echo 'sort';   
+			 
 			$users = array();
 			foreach($result as $k=>$x)
 			{
@@ -143,7 +161,7 @@ function query($q, $doindex = true, $newposts = false, $allposts = false)
 		if ($db)
 		{
 			if (!$db->exec($sql2)) echo '<p>index error '.$db->lastErrorMsg(); 
-			$datelimit = date('Y-m-d',strtotime('-14 day', time()));
+			$datelimit = date('Y-m-d',strtotime('-3 month', time()));
 			$sql2 = "DELETE FROM queries WHERE date < '".$datelimit."' ;"; 
 			if (rand(0,1000)>998) $db->exec($sql2); 
 			$db->close();
@@ -153,7 +171,7 @@ function query($q, $doindex = true, $newposts = false, $allposts = false)
 	return $result;	
 }
 
-function score($s, $description, $followers, $pubdate, $indexdate)
+function score($s, $description, $followers, $pubdate)
 {
    // occurencies, the earlier the more
    
@@ -183,7 +201,7 @@ function score($s, $description, $followers, $pubdate, $indexdate)
    $tod = date_create();
    $interval = date_diff($tod, $pub);
   
-   $r *= 14 / max(1,$interval->d);
+   $r *= 90 / max(1,$interval->d);
    
    $r = floor($r*1000);
    

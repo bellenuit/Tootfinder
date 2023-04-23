@@ -47,16 +47,30 @@
 		 }
 	}
 	
+	
     elseif ($userlabel && isset($_GET['submitquery']))
 	{
-		 $tfDebug = '';
-		 $msg = query($userlabel);
-	
-		 $echo .= $tfDebug;
-		 $echo .= '<pre>'.print_r($msg, true).'</pre>';
+		$ende = $start = time();
+		
+		$tfDebug = '';
+		$msg = query($userlabel);
+		
+		$lines = array();
+		
+		foreach($msg as $d)
+		{
+			$keys = array_keys($d);
+			$values = array_values($d);
+			if (!count($lines)) $lines []= '<tr><th>'.join('</th><th>',$keys).'</th></tr>';			
+			$lines []= '<tr><td>'.join('</td><td>',$values).'</td></tr>';	
+		}	
+		
+		$echo .= '<table border=1>'.join(PHP_EOL,$lines).'</table>';
+		$echo .= '<p>'.sprintf('%0d',$ende - $start).' seconds';	  		 
 		 	
 		 
 	}
+
 
 	
 	elseif ($userlabel && isset($_GET['submitdelete']))

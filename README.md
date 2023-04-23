@@ -6,11 +6,11 @@ This is the source code of the search enginge Tootfinder.
 
 Tootfinder indexes recent posts from consenting Mastodon users. The users
 manifest consent with a magic word on their profile. The posts are available on
-the website for search for 14 days and then permanency removed.
+the website for search for 3 months and then permanency removed.
 
 Users can revoke the consent by removing the magic word on their profile
 (*tootfinder*, *tfr* or *searchable*). The posts are available on the website
-for search for 14 days and then permanently removed. Mentions are not displayed
+for search for 3 months and then permanently removed. Mentions are not displayed
 in the search results.
 
 Tootfinder uses the public API (JSON, fallback to HTML) and the public API feed from the user. The posts are indexed in an virtual FTS3 table of a SQLite database.

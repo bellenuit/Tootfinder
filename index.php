@@ -27,9 +27,10 @@ $name = filter_input(INPUT_GET, 'name', FILTER_SANITIZE_STRING);
 $doindex = 1 - $noindex;
 
 if ($name && substr($name,0,9)=='rest/api/') { include 'inc/rest.php'; exit; }
+
 if ($name && substr($name,0,15)=='search/noindex/') { $query = substr($name,15);  $noindex = 1; } 
 elseif ($name && substr($name,0,7)=='search/') { $query = substr($name,7);  }  // support for pretty URL
-elseif ($name && substr($name,0,13)=='tags/noindex') { $query = '#'.substr($name,13); $noindex = 1;  } 
+elseif ($name && substr($name,0,13)=='tags/noindex/') { $query = '#'.substr($name,13); $noindex = 1;  } 
 elseif ($name && substr($name,0,5)=='tags/') { $query = '#'.substr($name,5);  }  // support for pretty URL for tag search
 
 ?>
@@ -80,10 +81,17 @@ elseif ($name && substr($name,0,5)=='tags/') { $query = '#'.substr($name,5);  } 
         $descriptions = array();
         $echo = array();
 
-        foreach(query($query, $doindex, $newposts, $allpost) as $row)
+		$list = query($query, $doindex, $newposts, $allpost) ; 
+		// $list = query($query);
+		
+		echo '<!-- list ';
+		print_r($list);
+		echo '-->'; 
+		
+        foreach($list as $row)
         {
-	        if (isset($list[$row['link']])) continue; // there should not be duplicates, should there?
-	        $list[$row['link']]=1;
+	        //if (isset($list[$row['link']])) continue; // there should not be duplicates, should there?  
+	        $list[$row['link']]=1;  
 
 	        if ($row['found']<2 && !$similar) { echo '<div class="post">No exact results. Similar results found.</div>'; $similar = true;}
           preg_match('/@([a-zA-Z0-9_]+)@([a-zA-Z0-9-_]+\.[a-zA-Z0-9.-_]+)/',$row['user'],$matches); 
@@ -99,7 +107,7 @@ elseif ($name && substr($name,0,5)=='tags/') { $query = '#'.substr($name,5);  } 
 	        $line = preg_replace("/<\/p>.*?<p>/",'<br>',$line);
 
 
-	        $line .= handleMedia(@$row['media']);
+	        $line .= handleMedia(@$row['media']); 
 
 	        $line = handleContentWarning($line);
 
@@ -113,12 +121,13 @@ elseif ($name && substr($name,0,5)=='tags/') { $query = '#'.substr($name,5);  } 
 	        $descriptions[$row['description']] = 1;
 	        
         }
+      
                
         echo join('',$echo);
 
 		if (!$found) echo '<div class="post">No results.</div>';
 
-
+		
 
 	}
 	else
@@ -131,6 +140,7 @@ elseif ($name && substr($name,0,5)=='tags/') { $query = '#'.substr($name,5);  } 
 	    <li>tfr</li>
 	    <li>searchable</li>
 		</ul>
+	    <p>Wait some minutes, to let the server cache update your profile.</p>
 	    </div>
 
 		<div class="post"><p><b>Join the index (step 2)</b>
@@ -140,14 +150,14 @@ elseif ($name && substr($name,0,5)=='tags/') { $query = '#'.substr($name,5);  } 
 		<p><input type = "submit" name ="submitjoin" value="Join">
 	</form></div>
 		<div class="post"><p><b>Quit the index</b></p>
-	  <p>If you change your mind, just remove the magic word in your profile. Tootfinder will stop indexing your account and your toots will eventually disappear from our database (after 14 days).
+	  <p>If you change your mind, just remove the magic word in your profile. Tootfinder will stop indexing your account and your toots will eventually disappear from our database (after 3 months).
 	    </div>';
 
 		if ($join) echo $jointheinxex;
 
 		echo '<div class="post"><p><b>Full text search on Mastodon</b>
 	<p>Imagine searching any post on Mastodon. This is now possible - at least for the posts of users who opt in.
-	<p>Tootfinder indexes all public posts of consenting users and makes them searchable for 14 days. If you want to be part of it, <a href="index.php?join=1">join the index</a>.
+	<p>Tootfinder indexes all public posts of consenting users and makes them searchable for 3 months. If you want to be part of it, <a href="index.php?join=1">join the index</a>.
 	</div>';
 
 		echo '<div class="post"><img src="site/files/elefant1.jpg" width=200px></div>';
@@ -161,13 +171,14 @@ elseif ($name && substr($name,0,5)=='tags/') { $query = '#'.substr($name,5);  } 
 	    <li>san OR francisco</li>
 	    <li>san -francisco</li>
 		</ul>
-	</div>';
+	</div>'; 
+	
 
 	echo '<div class="post"><b><p>More about search</b>
 	<p>If the crawler does not find an exact result, it looks for similar results. Click on the avatar to access the user, click on the date to access the post on Mastoton. Click on the image to access the original image.</div>';
 
 	echo '<div class="post"><p><b>Privacy note </b>
-	<p>This is pure opt-in: If you are not interested, just do not join the index. If you quit the index, your posts will be removed from the index after 14 days.</p>
+	<p>This is pure opt-in: If you are not interested, just do not join the index. If you quit the index, your posts will be removed from the index after 3 months.</p>
 <p><a href="privacy.php">Privacy statement</a></div>';
 
 	 echo '<div class="post"><b><p>Trending words</b><p>'.trendingWords().'
@@ -175,9 +186,12 @@ elseif ($name && substr($name,0,5)=='tags/') { $query = '#'.substr($name,5);  } 
 
 
 $pq = '';
-		foreach(popularQueries() as $elem)
+		foreach(popularQueries() as $elem) 
 		{
-			$pq .= '<a href="search/noindex/'.urlencode($elem['query']).'">'.$elem['query'].'</a><br>';
+			if (substr($elem['query'],0,1)=='#')
+				$pq .= '<a href="tags/noindex/'.urlencode(substr($elem['query'],1)).'">'.$elem['query'].'</a><br>';
+			else
+				$pq .= '<a href="search/noindex/'.urlencode($elem['query']).'">'.$elem['query'].'</a><br>';
 		}
 
 		echo '<div class="post"><b><p>Popular queries</b>
@@ -186,12 +200,12 @@ $pq = '';
 	if (!$join) echo $jointheinxex;
 
 		echo '<div class="post"><p><b>Implementation</b>
-		<p>Tootfinder uses the public Mastodon API for the profile and the JSON feed. The  feeds are consulted on an optimized frequency, indexed in a SQLite database and deleted after 14 days.</p>
+		<p>Tootfinder uses the public Mastodon API for the profile and the JSON feed. The  feeds are consulted on an optimized frequency, indexed in a SQLite database and deleted after 3 months.</p>
 	<p>Check out the <a href="wiki/index.php" target="_blank">Tootfinder Wiki</a></div>';
 
 echo '<div class="post"><p><b>Contact</b>
 		<p><a rel="me" href="https://tooting.ch/@buercher" target="_blank">@buercher@tooting.ch</a>
-	<p>v'.$tfVersion.' 2023-03-19<p>
+	<p>v'.$tfVersion.' 2023-04-23<p>
 	';
 	echo getinfo();
 	echo "<p>Index ".indexStatus();

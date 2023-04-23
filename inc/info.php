@@ -18,7 +18,7 @@ function getinfo()
 	$db = init(true);
 	if ($db)
 	{
-		$sql = 'SELECT count(link) FROM posts';
+		$sql = 'SELECT count(DISTINCT link) FROM posts';
 		$posts = $db->querySingle($sql);
 		$sql = 'SELECT count(user) FROM users';
 		$users = $db->querySingle($sql);
@@ -173,7 +173,7 @@ function relatedSearches($descriptions,$query)
 	 
 	 arsort($dict3);
 	 
-	 $stopwords = array('about', 'after','being','better', 'check', 'diese','doesn', 'einem', 'einen', 'einfach', 'everything', 'every', 'getting', 'gewesen', 'gonna', 'great', 'haben', 'having', 'jetzt', 'meine', 'message','might','never', 'nicht', 'other', 'people', 'playing', 'really','region', 'schon', 'should', 'source', 'start', 'stuff','there', 'these', 'their', 'thing', 'think', 'times', 'today', 'translated','translation','users','video', 'watching', 'werden','which', 'would');
+	 $stopwords = array('about', 'after','anyone', 'because', 'being','better', 'check', 'diese','doesn', 'einem', 'einen', 'einfach', 'everything', 'every', 'everyone', 'found', 'getting', 'gerade', 'gewesen', 'going', 'gonna', 'great', 'haben', 'having', 'jetzt', 'meine', 'message','might','never', 'nicht', 'other', 'people', 'playing', 'really','right', 'region', 'seems', 'schon', 'should', 'someone', 'source', 'start', 'still', 'stuff','there', 'these', 'their', 'thing', 'things', 'think', 'those', 'times', 'today', 'translated','translation','users','using', 'video', 'watching', 'werden','which', 'while', 'would');
 	 
 	 $i = 0;
 	 $links = array();
@@ -200,6 +200,9 @@ function trendingPosts()
 	{
 		$s = file_get_contents($file);
 		$result = json_decode($s,true);
+		
+		
+		
 		return $result;
 	}
 	
