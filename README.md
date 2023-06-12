@@ -35,21 +35,26 @@ Folder structure
 	- db.php create the database
 	- index.php analyze posting files
 	- info.php get statistics
+	- instance.php handling instance opt-in
 	- query.php search the posts
 	- read.php read posting files format 
 	- rest.php handle REST API
 	- skin.php format the posts for output
 	- user.php handle users
 	- utilities.php the rest
+- instance.php interface for instance opt-in
 - privacy.php privacy statement
 - site/
 	- bak/ last copy of the feed
 	- cache/ cache of some indicators of website
 	- configuration.php
-	- delete/ delete candidates
+	- deleted/ delete candidates
 	- feeds/ temporary copies of remote feeds
 	- files/ website files (css and images)
 	- hostmeta/ cache of host-meta files
+	- instancerules/ cache of instance rules
+	- instancusers/ cache of instance users
+	- outbox/ cache of outbox 
 	- profiles/ temporary copies of remote profile pages
 	- rejected/ feeds the server could not handle
 	- webfinger/ cache of webfinger files
