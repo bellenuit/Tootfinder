@@ -4,7 +4,7 @@
 /**
  *	info functions for statistics
  * 
- *  @version 1.8 2023-03-19
+ *  @version 2.1 2023-06-12
  */
 	
 	
@@ -52,20 +52,21 @@ function indexStatus()
 }
 
 
-function popularQueries()
+function popularQueries($refresh = false)
 {
 	
 	global $tfRoot;
 	$file = $tfRoot.'/site/cache/popularQueries.txt';
 	
-	if (file_exists($file) && time() - filemtime($file) < 3600) 
+	// if (file_exists($file) && time() - filemtime($file) < 3600) 
+	if (file_exists($file) && ! $refresh) 
 	{
 		$s = file_get_contents($file);
 		$result = json_decode($s,true);
 		return $result;
 	}
 	
-	$limit = date('Y-m-d',strtotime('-1 day', time()));
+	$limit = date('Y-m-d',strtotime('-2 day', time()));
 	$sql = "SELECT DISTINCT query, count(query) as c FROM queries WHERE results > 0 and date > '$limit' GROUP BY query ORDER BY c DESC limit 5"; 
 	
 	$db = initQueries(true);
@@ -91,8 +92,7 @@ function trendingWords($refresh = false)
 	global $tfRoot;
 	$file = $tfRoot.'/site/cache/trendingWords.txt';
 	
-	if (!$refresh)
-	if (file_exists($file) && time() - filemtime($file) < 3600) return file_get_contents($file);
+	if (file_exists($file) && ! $refresh) return file_get_contents($file);
 	
 	
 	$today = date('Y-m-d');

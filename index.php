@@ -48,11 +48,13 @@ elseif ($name && substr($name,0,5)=='tags/') { $query = '#'.substr($name,5);  } 
 	<h4><i>Opt-in global Mastodon full text search. <a href="index.php?join=1">Join the index!</a></i></h4>
 	
 	<?php 
+	
+		
 	if ($submitjoin)
 	{
 		 $msg = addUser($userlabel);
 
-		 if (stristr($msg,'class="error"')) $join = 1; else $query = $userlabel;
+		 if (stristr($msg,'class="error"')) $join = 1; else { $query = $userlabel; }
 	}
 
 	if ($msg) echo '<div class="status">'.$msg.'</div>';
@@ -73,9 +75,9 @@ elseif ($name && substr($name,0,5)=='tags/') { $query = '#'.substr($name,5);  } 
 
         $found = 0;
         $similar = false;
-        $newposts = false; if (isset($_GET['submitnew'])) $newposts = true;
+        
         $allpost = false;
-
+		$newposts = false; if (isset($_GET['submitnew']) || $userlabel) $newposts = true;	
         $list = array();
         
         $descriptions = array();
@@ -154,6 +156,11 @@ elseif ($name && substr($name,0,5)=='tags/') { $query = '#'.substr($name,5);  } 
 	    </div>';
 
 		if ($join) echo $jointheinxex;
+		
+		echo '<div class="post"><p><b>Instance opt-in</b>
+	<p>Instances can opt-in globally on <a href="instance.php">this page</a>. 
+	<p>The page lists the instances that have opted in. These instances must declare the indexing in their ruleset. Users on these instances can still opt out having the magic word "noindex" in their profile.
+	</div>';
 
 		echo '<div class="post"><p><b>Full text search on Mastodon</b>
 	<p>Imagine searching any post on Mastodon. This is now possible - at least for the posts of users who opt in.
@@ -179,10 +186,10 @@ elseif ($name && substr($name,0,5)=='tags/') { $query = '#'.substr($name,5);  } 
 
 	echo '<div class="post"><p><b>Privacy note </b>
 	<p>This is pure opt-in: If you are not interested, just do not join the index. If you quit the index, your posts will be removed from the index after 3 months.</p>
-<p><a href="privacy.php">Privacy statement</a></div>';
+<p><a href="privacy.php">Privacy statement</a></div>'; 
 
-	 echo '<div class="post"><b><p>Trending words</b><p>'.trendingWords().'
-	 <p><a href="search/%3Anow">Trending posts</a></div>';
+	/* echo '<div class="post"><b><p>Trending words</b><p>'.trendingWords().'
+	 <p><a href="search/%3Anow">Trending posts</a></div>';*/
 
 
 $pq = '';
@@ -202,14 +209,20 @@ $pq = '';
 		echo '<div class="post"><p><b>Implementation</b>
 		<p>Tootfinder uses the public Mastodon API for the profile and the JSON feed. The  feeds are consulted on an optimized frequency, indexed in a SQLite database and deleted after 3 months.</p>
 	<p>Check out the <a href="wiki/index.php" target="_blank">Tootfinder Wiki</a></div>';
+	
+	echo '<div class="post"><p><b>Instance opt-in</b>
+		<p>Instance opt-in is implemented but we cannot test it as we do not administer an instance. If you are a Mastodon instance admin and want to test it, please contact <a rel="me" href="https://tooting.ch/@buercher" target="_blank">@buercher@tooting.ch</a> with DM.</div>';
 
 echo '<div class="post"><p><b>Contact</b>
 		<p><a rel="me" href="https://tooting.ch/@buercher" target="_blank">@buercher@tooting.ch</a>
-	<p>v'.$tfVersion.' 2023-04-23<p>
+	<p>v'.$tfVersion.' '.$tfVersionDate.'<p>
 	';
 	echo getinfo();
 	echo "<p>Index ".indexStatus();
 	echo "</div>";
+	
+
+
 	
 	
 

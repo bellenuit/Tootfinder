@@ -55,8 +55,7 @@ function init($readonly = false)
 	{
 		echo '<p>create table users error '.$db->lastErrorMsg();
 	}
-	
-	
+		
 
 	if (!$db->exec('CREATE INDEX IF NOT EXISTS users_label ON users (label)'))
 	{

@@ -38,9 +38,9 @@ function readJSONFeed($s, $label, $host, $user, $file)
 		$list = array();
 		$list['medias'] = array();
 		
-		if (@$post['in_reply_to_id'])  continue; // replying
+		if (@$post['in_reply_to_id'])  continue; // replying 
 		
-		if (@$post['in_reply_to_account_id'])  continue; // replying
+		if (@$post['in_reply_to_account_id'])  continue; // replying 
 
 		if (@$post['visibility'] != 'public')  continue; // private only 
 		

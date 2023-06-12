@@ -4,7 +4,7 @@
  *	functions related to users
  * 
  *
- *  @version 1.8 2023-03-19
+ *  @version 2.1 2023-06-12
  */
 	
 function addUser($label)
@@ -72,10 +72,22 @@ function validUser($profile)
 	$head2 = json_encode($bio).json_encode($attachment);
 	
 	$head = $head1.$head2;
+	
+	
 
 	if (stristr($head,'tootfinder')) return 'tootfinder';
 	if (stristr($head,'tfr')) return 'tfr';
 	if (stristr($head,'searchable')) return 'searchable';
+	
+	$test = validInstance($profile['host']);
+	
+	if ($test !== false)
+	{ 
+		if (stristr($head,'noindex')) return false;
+		
+		return 'instance opt-in '.$profile['host'];
+	}
+	
 		
 	debugLog(expandableSnippet($head));
 		
@@ -85,10 +97,10 @@ function validUser($profile)
 function randomUsers()
 {
 	
-	$q = "SELECT user, host, label, id, priority FROM users WHERE priority > 0 ORDER BY priority LIMIT 50;";
+	$q = "SELECT user, host, label, id, priority FROM users WHERE priority > 0 ORDER BY priority LIMIT 20;";
 	
 	if (rand(0,100)> 90) 
-		$q = "SELECT user, host, label, id, priority FROM users ORDER BY RANDOM() DESC LIMIT 50;";
+		$q = "SELECT user, host, label, id, priority FROM users ORDER BY RANDOM() DESC LIMIT 20;";
 	
 	$db = init(true);
 	if ($db)
@@ -201,7 +213,7 @@ function getProfile($label, $forcerefresh=false)
 			$url = 	$dict['link'];
 			debugLog('<p><a href="'.$url.'">'.$url.'</a>');
 			$s = getRemoteString($url,$localpath);
-			
+			file_put_contents($localpath,$s);
 			debugLog(expandableSnippet($s));
 			
 			$j = json_decode($s,true);
@@ -212,9 +224,9 @@ function getProfile($label, $forcerefresh=false)
 				$profile['label'] = $label;
 				$profile['user'] = $user;
 				$profile['host'] = $host;
-				$profile['summary'] = $j['summary'];
-				$profile['attachment'] = json_encode($j['attachment']);
-				$profile['outbox'] = $j['outbox'];
+				$profile['summary'] = @$j['summary'];
+				$profile['attachment'] = @json_encode($j['attachment']);
+				$profile['outbox'] = @$j['outbox'];
 				
 				if (@$j['icon'])
 				{

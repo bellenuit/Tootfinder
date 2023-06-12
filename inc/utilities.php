@@ -4,7 +4,7 @@
 /**
  *	general purpose functions
  * 
- *  @version 1.8 2023-03-18
+ *  @version 2.1 2023-06-12
  */
 	
 if (!defined('CRAWLER')) die('invalid acces');
@@ -95,8 +95,8 @@ function xml2array( $xmlObject, $out = array () )
 
 function debugLog($s)
 {
-	global $tfDebug;
-	$tfDebug .= $s;
+	global $tfDebug; 
+	if (strlen($tfDebug) < 10000000) $tfDebug .= $s;  // prevent overflow
 }
 
 function wordList($s)
