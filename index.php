@@ -9,29 +9,34 @@
  *
  *  matti@belle-nuit.com
  *  @buercher@tooting.ch
- *  @version 1.8 2023-03-19
+ *  @version 2.2 2023-09-1'
  */
+
+error_reporting(E_ERROR | E_WARNING | E_PARSE);
+error_reporting( E_ALL | E_STRICT );
+ini_set("display_errors",1); 
+
 
 @define('CRAWLER',true);
 include_once 'api.php';
 
-$userlabel = '';
-
-$msg = filter_input(INPUT_GET, 'msg', FILTER_SANITIZE_STRING);
-$join = filter_input(INPUT_GET, 'join', FILTER_SANITIZE_STRING);
-$submitjoin = filter_input(INPUT_GET, 'submitjoin', FILTER_SANITIZE_STRING);
-$userlabel = trim(preg_replace('/\t+/', '',filter_input(INPUT_GET, 'userlabel', FILTER_SANITIZE_STRING)));
-$query = trim(preg_replace('/\t+/', '',filter_input(INPUT_GET, 'query', FILTER_SANITIZE_SPECIAL_CHARS)));
-$noindex = filter_input(INPUT_GET, 'noindex', FILTER_SANITIZE_STRING);
-$name = filter_input(INPUT_GET, 'name', FILTER_SANITIZE_STRING);
+$msg = filter_input(INPUT_GET, 'msg', FILTER_SANITIZE_ENCODED);
+$query = filter_input(INPUT_GET, 'query', FILTER_SANITIZE_ENCODED);
+if ($query) $query = urldecode($query);
+if ($query) $query = trim(preg_replace('/\t+/', '',$query));
+$noindex = filter_input(INPUT_GET, 'noindex', FILTER_SANITIZE_ENCODED);
+$name = filter_input(INPUT_GET, 'name', FILTER_SANITIZE_ENCODED);
+if ($name) $name = urldecode($name);
+$offset = filter_input(INPUT_GET, 'offset', FILTER_SANITIZE_ENCODED);
 $doindex = 1 - $noindex;
+$subst = 0;
 
 if ($name && substr($name,0,9)=='rest/api/') { include 'inc/rest.php'; exit; }
 
-if ($name && substr($name,0,15)=='search/noindex/') { $query = substr($name,15);  $noindex = 1; } 
-elseif ($name && substr($name,0,7)=='search/') { $query = substr($name,7);  }  // support for pretty URL
-elseif ($name && substr($name,0,13)=='tags/noindex/') { $query = '#'.substr($name,13); $noindex = 1;  } 
-elseif ($name && substr($name,0,5)=='tags/') { $query = '#'.substr($name,5);  }  // support for pretty URL for tag search
+if ($name && substr($name,0,15)=='search/noindex/') { $query = substr($name,15);  $noindex = 1; $subst = 1; } 
+elseif ($name && substr($name,0,7)=='search/') { $query = substr($name,7);  $subst = 1;}  // support for pretty URL
+elseif ($name && substr($name,0,13)=='tags/noindex/') { $query = '#'.substr($name,13); $noindex = 1; $subst = 1; } 
+elseif ($name && substr($name,0,5)=='tags/') { $query = '#'.substr($name,5); $subst = 1; }  // support for pretty URL for tag search
 
 ?>
 
@@ -45,21 +50,9 @@ elseif ($name && substr($name,0,5)=='tags/') { $query = '#'.substr($name,5);  } 
 <body>
 	<div class="header">
 	<h1>Tootfinder</h1>
-	<h4><i>Opt-in global Mastodon full text search. <a href="index.php?join=1">Join the index!</a></i></h4>
+	<h4><i>Opt-in global Mastodon full text search. <a href="join.php">Join the index!</a></i></h4>
 	
-	<?php 
-	
-		
-	if ($submitjoin)
-	{
-		 $msg = addUser($userlabel);
-
-		 if (stristr($msg,'class="error"')) $join = 1; else { $query = $userlabel; }
-	}
-
-	if ($msg) echo '<div class="status">'.$msg.'</div>';
-
-	?>
+	<?php if ($msg) echo '<div class="status">'.$msg.'</div>'; ?>
 
 	<p><form method = "get" action ="index.php">
 		<input type = "search" name = "query" placeholder="Search..." value = "<?php echo $query; ?>">
@@ -77,7 +70,7 @@ elseif ($name && substr($name,0,5)=='tags/') { $query = '#'.substr($name,5);  } 
         $similar = false;
         
         $allpost = false;
-		$newposts = false; if (isset($_GET['submitnew']) || $userlabel) $newposts = true;	
+		$newposts = false; if (isset($_GET['submitnew'])) $newposts = true;	
         $list = array();
         
         $descriptions = array();
@@ -86,9 +79,9 @@ elseif ($name && substr($name,0,5)=='tags/') { $query = '#'.substr($name,5);  } 
 		$list = query($query, $doindex, $newposts, $allpost) ; 
 		// $list = query($query);
 		
-		echo '<!-- list ';
-		print_r($list);
-		echo '-->'; 
+		//echo '<!-- list ';
+		//print_r($list);
+		// echo '-->'; 
 		
         foreach($list as $row)
         {
@@ -102,7 +95,7 @@ elseif ($name && substr($name,0,5)=='tags/') { $query = '#'.substr($name,5);  } 
 	        $signature = '<span class="signature">'.$row['user'].'<br><a href="'.$row['link'].'" target="_blank" rel="nofollow">'.$row['pubdate'].'</a></span>';
 	        $line = $row['description'];
 
-	        $line = handleHTMLHeader($line);
+	        
 	        $line = handleMentions($line);
 	        $line = handleHashtags($line);
 	        // fix paragraphs
@@ -113,8 +106,10 @@ elseif ($name && substr($name,0,5)=='tags/') { $query = '#'.substr($name,5);  } 
 
 	        $line = handleContentWarning($line);
 
-			$line = '<div class="post" id="'.$row['link'].'"><div class="postheader"><a href="https://'.$host.'/users/'.$username.'" target="_blank" rel="nofollow"><img src="'.$row['image'].'" class="avatar"> </a>'. $signature.'</div><div class="postbody">'.$line.'</div></div>';
+			$line = '<div class="post" id="'.$row['link'].'"><div class="postheader"><a href="https://'.$host.'/users/'.$username.'" target="_blank" rel="nofollow"><img src="'.$row['image'].'" onerror="this.onerror=null; this.src=\'site/files/elefant1.jpg\'" class="avatar"> </a>'. $signature.'</div><div class="postbody">'.$line.'</div></div>';
 			
+	        $line = handleHTMLHeader($line);
+	        
 	        $echo[] = $line.PHP_EOL;
 
 	        $found++;
@@ -127,44 +122,25 @@ elseif ($name && substr($name,0,5)=='tags/') { $query = '#'.substr($name,5);  } 
                
         echo join('',$echo);
 
-		if (!$found) echo '<div class="post">No results.</div>';
-
+		if (!$found)
+		{
+			echo '<div class="post">No results.</div>';
+		}
+		else
+		{
+			if (!$subst)
+			echo '<script>window.history.replaceState(null, "", "https://tootfinder.ch/search/'.urlencode($query).'")</script>';
+		}
 		
-
 	}
 	else
 	{
 
-		$jointheinxex = '<div class="post"><p><b>Join the index (step 1)</b>
-	    <p>You need first to provide consent via your profile.
-	    Place the magic word anywhere in your profile (either bio or part of a well-formed link in a label). Possible values:
-	    <ul><li>tootfinder</li>
-	    <li>tfr</li>
-	    <li>searchable</li>
-		</ul>
-	    <p>Wait some minutes, to let the server cache update your profile.</p>
-	    </div>
-
-		<div class="post"><p><b>Join the index (step 2)</b>
-	    <p>Submit us your full username.
-	    <form method = "get" action ="index.php?action=join">
-		<input type = "text" name = "userlabel" placeholder="@user@example.com" value = "'.$userlabel.'">
-		<p><input type = "submit" name ="submitjoin" value="Join">
-	</form></div>
-		<div class="post"><p><b>Quit the index</b></p>
-	  <p>If you change your mind, just remove the magic word in your profile. Tootfinder will stop indexing your account and your toots will eventually disappear from our database (after 3 months).
-	    </div>';
-
-		if ($join) echo $jointheinxex;
 		
-		echo '<div class="post"><p><b>Instance opt-in</b>
-	<p>Instances can opt-in globally on <a href="instance.php">this page</a>. 
-	<p>The page lists the instances that have opted in. These instances must declare the indexing in their ruleset. Users on these instances can still opt out having the magic word "noindex" in their profile.
-	</div>';
 
 		echo '<div class="post"><p><b>Full text search on Mastodon</b>
 	<p>Imagine searching any post on Mastodon. This is now possible - at least for the posts of users who opt in.
-	<p>Tootfinder indexes all public posts of consenting users and makes them searchable for 3 months. If you want to be part of it, <a href="index.php?join=1">join the index</a>.
+	<p>Tootfinder indexes all public posts of consenting users and makes them searchable for 3 months. If you want to be part of it, <a href="join.php">join the index</a>.
 	</div>';
 
 		echo '<div class="post"><img src="site/files/elefant1.jpg" width=200px></div>';
@@ -188,31 +164,11 @@ elseif ($name && substr($name,0,5)=='tags/') { $query = '#'.substr($name,5);  } 
 	<p>This is pure opt-in: If you are not interested, just do not join the index. If you quit the index, your posts will be removed from the index after 3 months.</p>
 <p><a href="privacy.php">Privacy statement</a></div>'; 
 
-	/* echo '<div class="post"><b><p>Trending words</b><p>'.trendingWords().'
-	 <p><a href="search/%3Anow">Trending posts</a></div>';*/
-
-
-$pq = '';
-		foreach(popularQueries() as $elem) 
-		{
-			if (substr($elem['query'],0,1)=='#')
-				$pq .= '<a href="tags/noindex/'.urlencode(substr($elem['query'],1)).'">'.$elem['query'].'</a><br>';
-			else
-				$pq .= '<a href="search/noindex/'.urlencode($elem['query']).'">'.$elem['query'].'</a><br>';
-		}
-
-		echo '<div class="post"><b><p>Popular queries</b>
-	<p>'.$pq.'</div>';
-
-	if (!$join) echo $jointheinxex;
 
 		echo '<div class="post"><p><b>Implementation</b>
 		<p>Tootfinder uses the public Mastodon API for the profile and the JSON feed. The  feeds are consulted on an optimized frequency, indexed in a SQLite database and deleted after 3 months.</p>
 	<p>Check out the <a href="wiki/index.php" target="_blank">Tootfinder Wiki</a></div>';
 	
-	echo '<div class="post"><p><b>Instance opt-in</b>
-		<p>Instance opt-in is implemented but we cannot test it as we do not administer an instance. If you are a Mastodon instance admin and want to test it, please contact <a rel="me" href="https://tooting.ch/@buercher" target="_blank">@buercher@tooting.ch</a> with DM.</div>';
-
 echo '<div class="post"><p><b>Contact</b>
 		<p><a rel="me" href="https://tooting.ch/@buercher" target="_blank">@buercher@tooting.ch</a>
 	<p>v'.$tfVersion.' '.$tfVersionDate.'<p>
@@ -227,11 +183,12 @@ echo '<div class="post"><p><b>Contact</b>
 	
 
 	}
+  
 
 
-	?>
+	echo '
 	</div>
 	<div style="clear:both"></div>
 
 </body>
-</html>
+</html>';

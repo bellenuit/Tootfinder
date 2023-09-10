@@ -5,7 +5,7 @@ if (!defined('CRAWLER')) die('invalid acces');
 /**
  *	functions to process the post for display
  * 
- *  @version 1.8 2023-03-19
+ *  @version 2.2 2023-09-10
  */
 
 function handleContentWarning($s)
@@ -36,8 +36,12 @@ function handleMentions($s)
 {
 	// remove all mentions 
 	
+	echo "<!-- ".$s."-->";
+	
 	$doc = new DOMDocument();
-	$s  = mb_convert_encoding($s , 'HTML-ENTITIES', 'UTF-8');  // DOM does not reasd unicode
+	$s  = mb_encode_numericentity($s, array (0x80, 0xffffff, 0x80, 0xffffff), 'UTF-8') ; // DOM does not reasd unicode
+	
+	echo "<!-- ".$s."-->";
 	@$doc->loadHTML($s);
 	foreach ($doc->getElementsByTagName('span') as $item)
 	{
@@ -51,13 +55,18 @@ function handleMentions($s)
 		
 	}
 	$s  = $doc->saveHTML();	
-	$s  = mb_convert_encoding($s , 'UTF-8', 'HTML-ENTITIES'); // give back unicode for proper fulltext search of japanese
+	if ($s) $s  = mb_decode_numericentity($s, array (0x80, 0xffffff, 0x80, 0xffffff), 'UTF-8') ;// give back unicode for proper fulltext search of japanese
+	echo "<!-- ".$s."-->";
+	
+	
+	
 	return $s;
 }
 
 function handleHashtags($s)
 {
      // link hashtags to tootfinder // hashtag can be cut by ellipsis
+     $s = urldecode($s);
      return preg_replace('/(<a href=")https:\/\/.*?\/tags\/(.*?)" class="mention hash.*?" rel="tag">.*?<\/a>/','$1tags/$2">#$2</a>',$s);  
 }
 
@@ -131,7 +140,7 @@ function handleHTMLHeader($s)
 	$s = str_ireplace('</html>','',$s);
 	$s = str_ireplace('<body>','',$s);
 	$s = str_ireplace('</body>','',$s);
-	return $s;
+	return $s; 
 }
 
 function encodeSpacelessLanguage($s)

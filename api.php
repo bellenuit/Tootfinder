@@ -3,7 +3,7 @@
 /**
  *	main entry point, includes all function
  * 
- *  @version 2.1 2023-06-12
+ *  @version 2.2 2023-09-10
  */
 
 /*
@@ -15,8 +15,9 @@ error_reporting(E_ALL);
 if (!defined('CRAWLER')) die('invalid acces');
 
 $tfRoot = dirname(__FILE__);
-$tfVersion = '2.1';
-$tfVersionDate = '2023-06-12';
+$tfVersion = '2.2';
+$tfVersionDate = '2023-09-10';
+$tfDebug = '';
 
 
 include_once $tfRoot.'/inc/crawl.php';

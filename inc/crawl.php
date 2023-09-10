@@ -4,13 +4,15 @@
  *	crawl function
  *  gets a batch of posting files from the instances and puts them in the feeds folder
  * 
- *  @version 1.8 2023-03-17
+ *  @version 2.2 2023-09-10
  */
 	
 if (!defined('CRAWLER')) die('invalid acces');
 
 function crawl($usr='')
 {
+	
+	$start = time();
 	
 	global $tfRoot;
 	$verbose = '';
@@ -37,7 +39,17 @@ function crawl($usr='')
 		
 		$profile = getProfile($label, false && rand(0,100)> 95); // check profile systematically every 20 crawls
 		
-		if (!count($profile))  { debugLog('<p>crawl empty profile '.$label); continue; }
+		if (!count($profile)) 
+		{ debugLog('<p>crawl empty profile '.$label); 
+			
+			// common error
+			if (strstr($label,'https://') or strstr($label,'http://'))
+				$journal []= "DELETE FROM users WHERE label = '$label'; ";
+			else
+				$priority = time()+86400;
+				$journal []= "UPDATE users SET priority = $priority WHERE label = '".$label."' ; ";		
+			
+		    continue; }
 		
 		$localpath = $tfRoot.'/site/feeds/'.$label.'.json';
 		
@@ -67,7 +79,11 @@ function crawl($usr='')
 		}
 	}
 	
+	$ende = time();
+		
+	
 	debugLog('<p><b>crawl profiles: '.$pc. ' feeds: '.$fc.'</b>');	
+	debugLog(sprintf(' (%0d sec)',$ende - $start));
 	
 	getRemoteFiles($shoppinglist);
 	

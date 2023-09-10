@@ -4,7 +4,7 @@
 /**
  *	query functions
  * 
- *  @version 2.0 2023-04-23
+ *  @version 2.2 2023-09-10
  */	
 	
 if (!defined('CRAWLER')) die('invalid acces');
@@ -13,6 +13,7 @@ if (!defined('CRAWLER')) die('invalid acces');
 function query($q, $doindex = true, $newposts = false, $allposts = false)
 {
 	
+	$start = time();
 	$query0 = $q;
 	
 	if ($q == ':now')
@@ -58,11 +59,7 @@ function query($q, $doindex = true, $newposts = false, $allposts = false)
   	
 	debugLog('<p>'.$sql);
 	
-	// echo $sql;
-	
-	
-	
-	
+	$start = $ende = time();
 	
 	$db = init(true);
 	if ($db)
@@ -134,7 +131,7 @@ function query($q, $doindex = true, $newposts = false, $allposts = false)
 				if (isset($users[$x['user']]))
 				{
 					$users[$x['user']]++;
-					$x['score'] /= $users[$x['user']];
+					$x['score'] = round($x['score']/$users[$x['user']]);
 					$result[$k] = $x;
 				}
 				else
@@ -148,12 +145,14 @@ function query($q, $doindex = true, $newposts = false, $allposts = false)
 		
 	}
 	
+	$ende  = time();
+	debugLog(sprintf('<p>SQL (%0d sec)',$ende - $start));
+	$start  = time();
 	
-	
-	
-	if (!$planb && $doindex && ! stristr($query0,'@'))
+	if ($doindex && ! stristr($query0,'@'))
 	{
 	    
+		if ($planb) $rc = 0;
 		$date = date("Y-m-d H:i"); // remove seconds to discourage clickbait
 		$q = SQLite3::escapeString($query0);
 		$sql2 = "INSERT INTO queries (query, date, results) VALUES ('".$q."','".$date."',".$rc.");"; 
@@ -167,6 +166,9 @@ function query($q, $doindex = true, $newposts = false, $allposts = false)
 			$db->close();
 		}
 	}
+	$ende = time();
+	debugLog(sprintf('<p>Update queries (%0d sec)',$ende - $start));
+	$start  = time();
 	
 	return $result;	
 }
@@ -203,7 +205,7 @@ function score($s, $description, $followers, $pubdate)
   
    $r *= 90 / max(1,$interval->d);
    
-   $r = floor($r*1000);
+   $r = round($r*1000);
    
    return $r;
 }

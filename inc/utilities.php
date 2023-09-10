@@ -4,7 +4,7 @@
 /**
  *	general purpose functions
  * 
- *  @version 2.1 2023-06-12
+ *  @version 2.2 2023-09-10
  */
 	
 if (!defined('CRAWLER')) die('invalid acces');

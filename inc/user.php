@@ -4,7 +4,7 @@
  *	functions related to users
  * 
  *
- *  @version 2.1 2023-06-12
+ *  @version 2.2 2023-09-10
  */
 	
 function addUser($label)
@@ -55,7 +55,9 @@ function addUser($label)
 	crawl($label);
 	index($label);
 	
-	return '<p><span class="ok">Magic word <b>'.$magic.'</b> found. From now on, you are indexed.</span>';
+	$searchlink = '<a href="search/'.$label.'">Search for '.$label.'</a>';
+	
+	return '<p><span class="ok">Magic word <b>'.$magic.'</b> found. From now on, you are indexed.</span> '.$searchlink;
 	
 }
 	
@@ -89,7 +91,7 @@ function validUser($profile)
 	}
 	
 		
-	debugLog(expandableSnippet($head));
+	// debugLog(expandableSnippet($head));
 		
 	return false;	
 }
@@ -97,10 +99,10 @@ function validUser($profile)
 function randomUsers()
 {
 	
-	$q = "SELECT user, host, label, id, priority FROM users WHERE priority > 0 ORDER BY priority LIMIT 20;";
+	$q = "SELECT user, host, label, id, priority FROM users WHERE priority > 0 ORDER BY priority LIMIT 10;";
 	
 	if (rand(0,100)> 90) 
-		$q = "SELECT user, host, label, id, priority FROM users ORDER BY RANDOM() DESC LIMIT 20;";
+		$q = "SELECT user, host, label, id, priority FROM users ORDER BY RANDOM() DESC LIMIT 10;";
 	
 	$db = init(true);
 	if ($db)

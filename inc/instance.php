@@ -4,7 +4,7 @@
  *	functions related to instance opt-in
  * 
  *
- *  @version 2.1 2023-06-12
+ *  @version 2.2 2023-09-10
  */	
  
 
@@ -48,6 +48,8 @@ function addInstance($host)
 	}
 	
 	debugLog('<p>Valid instance. Going to add users. Magic: '.$magic);
+	
+	addInstanceUsers($host);
 		
 	
 	$sql = "BEGIN TRANSACTION; 
@@ -65,12 +67,27 @@ function addInstance($host)
 		$db->close();
 	}
 	
-	return '<p><span class="ok">Magic sentence <b>'.$magic.'</b> found. From now on, the instance is indexed and listed below.</span>';
+	$searchlink = '<a href="search/'.$host.'">Search for '.$host.'</a>';
+	
+	return '<p><span class="ok">Magic sentence <b>'.$magic.'</b> found. From now on, the instance is indexed and listed below.</span> '.$searchlink;
 	
 }
 
 function validInstance($host, $forcerefresh=false)
 {
+	
+	$q = "SELECT host FROM instances WHERE host = '".$host."';";  
+	$db = init(true);
+	if ($db)
+	{
+		$list = $db->query($q);
+		$result = array();
+		while($d = $list->fetchArray(SQLITE3_ASSOC)) $result[] = $d['host'];
+		$db->close();
+		if (!count($result)) return false;
+	}
+	else return false;
+	
 	$rules = getInstanceRules($host, $forcerefresh);
 	if (!count($rules)) return '<p><span class="error">I cannot find the rules of the instance <b>'.$host.'</b></span>';
 	$s = json_encode($rules);
@@ -79,13 +96,12 @@ function validInstance($host, $forcerefresh=false)
 	
 	if (stristr($s,$v)) 
 	{
-		addInstanceUsers($host);
-		
+		if (rand(0,100)> 95) addInstanceUsers($host);
 		return $v;
 	}
 	
 		
-	debugLog('<h4>Rules</h4>'); 	 
+	debugLog('<h4>Rules for '.$host.'</h4>'); 	 
 	debugLog(expandableSnippet($s));
 		
 	return false;	
@@ -179,7 +195,8 @@ function getInstanceUsers($host, $forcerefresh=false, $offset=0)
 function addInstanceUsers($host)
 {	
 	
-	DebugLog('<h4>Add instance users</h4>');
+	$start = time();
+	DebugLog('<h4>Add instance users for '.$host.'</h4>');
 	// get all current instance users
 	$currentusers = array();
 	
@@ -204,10 +221,10 @@ function addInstanceUsers($host)
 		$found = false;
 		foreach($users as $elem)
 		{			
-			$user = $elem['username']; debugLog('<p>'.$user);
+			$user = $elem['username']; 
 			if (!array_key_exists($user,$currentusers))
 			{
-				debugLog(' added');
+				debugLog('<p>'.$user); debugLog(' added');
 				
 				$priority = time();
 				$label = '@'.$user.'@'.$host;
@@ -218,7 +235,7 @@ function addInstanceUsers($host)
 			}
 			else
 			{
-				debugLog(' existing');
+				// debugLog(' existing');
 			}
 		}
 		$offset +=40;
@@ -238,6 +255,8 @@ function addInstanceUsers($host)
 		$db->close();
 	}
 	
+	$ende = time();
+	debugLog(sprintf(' (%0d sec)',$ende - $start));
 
 }
 

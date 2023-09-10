@@ -9,7 +9,7 @@ if (!defined('CRAWLER')) die('invalid acces');
  *  There are two separate databases for the indexed and the queries.
  *  Whenever possible ask only for read access. Reading is concurrent, writing not.
  * 
- *  @version 1.4 2023-02-20
+ *  @version 2.2 2023-09-10
  */
 
 
@@ -59,14 +59,18 @@ function init($readonly = false)
 
 	if (!$db->exec('CREATE INDEX IF NOT EXISTS users_label ON users (label)'))
 	{
-		echo '<p>create table queries error '.$db->lastErrorMsg();
+		echo '<p>index table users error '.$db->lastErrorMsg();
 	}
 	if (!$db->exec('CREATE INDEX IF NOT EXISTS users_priority ON users (priority)'))
 	{
-		echo '<p>create table queries error '.$db->lastErrorMsg();
+		echo '<p>index table users error '.$db->lastErrorMsg();
 	}
-
-	
+/*
+	if (!$db->exec('CREATE INDEX IF NOT EXISTS posts_indexdate ON posts (indexdate)'))
+	{
+		echo '<p>index table posts error '.$db->lastErrorMsg();
+	}
+*/
 	
 	return $db;	
 	

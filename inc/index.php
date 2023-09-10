@@ -8,7 +8,7 @@
  *  if not valid, it checks if the user still has posts, if not the user is deleted (3 months)
  *  files are added and moved to the bak or the reject folder
  * 
- *  @version 2.0 2023-04-23
+ *  @version 2.2 2023-09-10
  */
 	
 function index($usr = '')
@@ -17,7 +17,7 @@ function index($usr = '')
 	
 	
 	if ($usr) debugLog('<p><b>index '.$usr.'</b>');
-	
+	else debugLog('<p><b>index </b>');
     
    
 	if ($usr) $files = glob($tfRoot.'/site/feeds/'.$usr.'.*');
@@ -38,6 +38,8 @@ function index($usr = '')
 	
 	foreach($files as $file)
 	{			
+		$start = time();
+		
 		debugLog('<p>file '.basename($file) );
 		
 		$fc++;
@@ -82,7 +84,7 @@ function index($usr = '')
 		
 		if (!@$magic) 
 		{
-			debugLog('<p>Invalid user: <a href="https://'.$host.'/users/'.$user.'" target="_blank">'.$label.'</a>');
+			debugLog('<p>Invalid user <a href="https://'.$host.'/users/'.$user.'" target="_blank">'.$label.'</a>');
 			// we do not delete the user immediately, because the profile page may also have been on error.
 			// we wait until there is no new post
 
@@ -102,7 +104,8 @@ function index($usr = '')
 			@rename($file,$tfRoot.'/site/rejected/invaliduser-'.basename($file));
 			$priority = time()+86400;
 			$journal []= "UPDATE users SET priority = $priority WHERE label = '".$label."' ; ";
-			debugLog(' invaliduser '); continue;
+			$ende = time();
+			debugLog(sprintf(' invaliduser (%0d sec)',$ende - $start));
 			continue;
 		}
 	
@@ -110,7 +113,10 @@ function index($usr = '')
 				
 		if (!file_exists($file)) 
 		{
-			debugLog(' nofile '); continue;
+			debugLog(' nofile '); 
+			$ende = time();
+			debugLog(sprintf(' (%0d sec)',$ende - $start));
+			continue;
 				
 		}
 		$s = file_get_contents($file);	
@@ -289,6 +295,10 @@ function index($usr = '')
 		$journal []= "UPDATE users SET priority = $priority WHERE label = '".$label."' ; ";
 		
 		$okfiles []= $file;
+		
+		$ende = time();
+		debugLog(sprintf(' (%0d sec)',$ende - $start));
+		
 	
 	} 
 	
@@ -310,17 +320,22 @@ function index($usr = '')
 		@unlink($file);
 	}
 	
+	$ende = $start = time();
+	
+	if (count($journal))
+	{		
 		
-	$q = join(PHP_EOL,$journal);		
-	$db = init();
-	if ($db)
-	{
-		if (!@$db->exec($q))
+		$db = init();
+		if ($db)
 		{
-			debugLog('<b>index error</b> '.$db->lastErrorMsg().' '.$q);
-			return;
+			$q = join(PHP_EOL,$journal);
+			if (!@$db->exec($q))
+			{
+				debugLog('<b>index error</b> '.$db->lastErrorMsg().' '.$q);
+				return;
+			}
+			$db->close();
 		}
-		$db->close();
 	}
 	
 	foreach($okfiles as $file)
@@ -330,7 +345,9 @@ function index($usr = '')
 		@rename($file,$bak);
 	}
 	
-	debugLog('<p><b>index feeds: '.$fc. ' Unchanged: '.$uc. ' Posts: '.$pc.'</b>');	
+	$time = sprintf(' (%0d sec)',$ende - $start);
+	
+	debugLog('<p><b>index feeds: '.$fc. ' Unchanged: '.$uc. ' Posts: '.$pc.'</b>'.$time);	
 	
 	getRemoteFiles($deletelist);	
 	
